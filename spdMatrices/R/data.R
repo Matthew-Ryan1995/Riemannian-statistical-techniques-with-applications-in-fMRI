@@ -1,0 +1,19 @@
+#' COBRE data on schizophrenic patients
+#'
+#' A dataset containing phenotype data, MSDL ROI time series, and correlation matrices
+#' for the COBRE dataset.
+#'
+#' @format A tibble with 146 subjects and 7 variables:
+#' \describe{
+#'   \item{id}{Unique ID for subject.}
+#'   \item{age}{The age of the subject in years.}
+#'   \item{gender}{The binary gender of the subject. Either Female or Male.}
+#'   \item{handedness}{The preferred hand of the subject. Either Left, Right or Both.}
+#'   \item{group}{The group of the subject.  Either Patient or Control.}
+#'   \item{msdl_roi}{A 150 x 39 matrix for each subject containing the time series for each ROI in the MSDL atlas.}
+#'   \item{cors}{A 39 x 39 matrix for each subject containing the correlation matrix derived from msdl_roi.}
+#' }
+#'
+#' @source \url{https://nilearn.github.io/stable/modules/generated/nilearn.datasets.fetch_cobre.html#nilearn.datasets.fetch_cobre}
+#'
+"cobre"
