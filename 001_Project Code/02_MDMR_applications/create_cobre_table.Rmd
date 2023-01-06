@@ -1,0 +1,34 @@
+---
+output: 
+  pdf_document:
+    keep_tex: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+pacman::p_load(tidyverse, kableExtra)
+```
+
+
+```{r}
+tab <- readRDS("results/cobre_mdmr_results.Rds")
+```
+
+```{r cobre_tab}
+tab %>% 
+  select(-numer_df) %>% 
+  mutate(across(where(is.numeric), round, 3),
+         permutation_p_value = "<0.001",
+         predictor = case_when(predictor == "age" ~ "Age",
+                               predictor == "groupControl" ~ "Group",
+                               TRUE ~ "Overall")) %>% 
+  select(-method) %>% 
+  kbl(booktabs = T,
+      col.names = c("", "$\\tilde{F}$", "$\\tilde{R}^2$", "P-value"),
+      caption = "The results of MDMR on the COBRE dataset using three different distance metrics.  Each row represents a significant predictor at the 5\\% level.  All three metrics returned the same predictors as significant  There is a slightly stronger relationship shown in the Euclidean and Correlation metrics compared to the Geometric.", 
+      position = "htbp") %>% 
+  kable_styling(latex_options = "striped") %>% 
+  pack_rows(index = c("Geometric" = 3, "Euclidean" = 3, "Correlation" = 3))
+```
+
+

@@ -1,0 +1,96 @@
+---
+title: "Model recovery example"
+author: "Matt Ryan"
+date: \today
+output: 
+  html_document:
+    toc: yes
+    toc_float: yes
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+pacman::p_load(tidyverse, phdWork)
+```
+
+```{r}
+P <-  matrix(
+  c(
+    1/sqrt(3), 0,
+    0, 1/sqrt(2),
+    1/sqrt(3), 1/sqrt(2),
+    1/sqrt(3), 0
+  ), ncol = 2, byrow = TRUE
+)
+Q <- matrix(
+  c(
+    1/sqrt(2), 0,
+    0, 1/sqrt(3),
+    0, 1/sqrt(3),
+    1/sqrt(2), 1/sqrt(3)
+  ), ncol = 2, byrow = TRUE
+)
+Tmat <- 
+  matrix(
+    c(1, 0,
+      0, 1,
+      1, 1),
+    ncol = 2, byrow = TRUE
+  )
+Tmat <- apply(Tmat, 2, scale, scale = FALSE)
+X <- Tmat %*% t(P)
+Y <- Tmat %*% t(Q)
+```
+
+```{r}
+round(X, 4)
+```
+
+```{r}
+round(Y, 4)
+```
+
+
+
+```{r}
+tmp <- riemannian_pls(X = X, Y = Y, L = 2, type_x = "euclidean", type_y = "euclidean")
+```
+
+```{r}
+P.hat <- do.call(cbind, tmp$loadingsX)
+Q.hat <- do.call(cbind, tmp$loadingsY)
+T.hat <- do.call(cbind, tmp$scoresX)
+U.hat <- do.call(cbind, tmp$scoresY)
+X.hat <- T.hat %*% t(P.hat)
+Y.hat <- U.hat %*% t(Q.hat)
+```
+
+
+```{r}
+round(P.hat, 4)
+```
+
+```{r}
+round(Q.hat, 4)
+```
+
+```{r}
+round(T.hat, 4)
+```
+
+```{r}
+round(U.hat, 4)
+```
+
+```{r}
+round(Y, 4) - round(U.hat, 4) %*% t(round(Q.hat, 4))
+```
+
+```{r}
+varimax(P.hat)
+```
+
+
+
+

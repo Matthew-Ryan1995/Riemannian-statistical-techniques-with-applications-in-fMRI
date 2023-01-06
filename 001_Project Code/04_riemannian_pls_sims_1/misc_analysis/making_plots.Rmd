@@ -1,0 +1,171 @@
+---
+title: "Template Title"
+author: "Matt Ryan"
+date: \today
+output: 
+  html_document:
+    toc: yes
+    toc_float: yes
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+pacman::p_load(tidyverse, phdWork)
+```
+
+
+```{r}
+f <- list.files("results", recursive = T, full.names = T)
+```
+
+
+
+```{r}
+read_rds(f[str_detect(f, "presim_100")][4])
+```
+
+
+
+```{r}
+df <- map_dfr(f[!str_detect(f, "presim")], read_rds)
+```
+
+
+
+```{r}
+df %>% 
+  group_by(n, K) %>% 
+  summarise(res = mean(Q_r2), num_sim = n(), sd =sd(Q_r2), .groups = "drop") %>% 
+  ggplot(aes(x = K, y = res, colour = as.factor(n))) +
+  geom_line()
+```
+
+```{r}
+df %>% 
+  group_by(n, K) %>% 
+  summarise(across(contains("r2"), mean),
+            across(contains("rmse"), mean),
+            .groups = "drop") %>% 
+  pivot_longer(-c(n, K)) %>% 
+  ggplot(aes(x = K, y = value, colour = as.factor(n))) +
+  geom_line() + 
+  facet_wrap(~name, scales = "free_y")
+```
+
+```{r}
+plotting_data_boxplot <- expand_grid(tibble(K = 1:10, 
+                                P_r2 = map_dbl(K, ~min(.x/5, 1))), n = c(10, 50, 100, 150))
+```
+
+
+```{r}
+df %>% 
+  ggplot() +
+  # geom_line(data = tibble(K = 1:10, P_r2 = map_dbl(K, ~min(.x/5, 1)), gp = "A"), 
+  #           aes(as.factor(K), P_r2, group = gp),
+  #           lty = 2, size = 1, colour = "red") +
+  geom_boxplot(aes(x = as.factor(K), y = P_r2, fill = as.factor(n))) +
+geom_point(data = plotting_data_boxplot, aes(K, P_r2, fill = as.factor(n)),
+           shape = 4, size = 5, colour = "red")
+
+```
+```{r}
+df %>% 
+  ggplot() +
+  geom_line(data = tibble(K = 1:10, P_r2 = map_dbl(K, ~min(.x/5, 1)), gp = "A"), 
+            aes(as.factor(K), P_r2, group = gp),
+            lty = 2, size = 1, colour = "red") +
+  geom_boxplot(aes(x = as.factor(K), y = P_r2, fill = as.factor(n))) 
+# geom_point(data = tibble(K = 1:10, P_r2 = map_dbl(K, ~min(.x/5, 1))), aes(K, P_r2),
+#            shape = 4, size = 5, colour = "red")
+
+```
+
+```{r}
+df %>% 
+  group_by(K, n) %>% 
+  summarise(m = mean(P_r2), s = sd(P_r2), .groups = "drop") %>% 
+  ggplot(aes(x = K, y = m, col = as.factor(n))) +
+  geom_line() +
+  geom_point() +
+  geom_linerange(aes(ymin = m - s, ymax = m + s))
+```
+
+```{r}
+df %>% 
+  pivot_longer(c(contains("r2"), contains("rmse")), names_to = "statistic") %>% 
+  mutate(statistic = factor(statistic, 
+                            c("P_r2", "Q_r2", "X_r2", "Y_r2", "X_rmse", "Y_rmse")),
+  ) %>% 
+  group_by(n, K, statistic) %>% 
+  summarise(m = mean(value), s = sd(value), .groups = "drop") %>% 
+  ggplot(aes(x = K, y = m, col = as.factor(n), group = n)) +
+  geom_line() +
+  geom_point() +
+  geom_linerange(aes(ymin = m - s, ymax = m + s)) +
+  facet_wrap(~statistic, scales = "free_y") +
+  theme_classic() +
+  labs(x = "K", y = "Value", col = "Sample size") +
+  theme(legend.position = "bottom")
+ggsave("fig/sim_lines.png", height = 14, width = 21)
+```
+
+```{r}
+df %>% 
+  pivot_longer(c(contains("r2"), contains("rmse")), names_to = "statistic") %>% 
+  mutate(statistic = factor(statistic, 
+                            c("P_r2", "Q_r2", "X_r2", "Y_r2", "X_rmse", "Y_rmse")),
+         K = as.factor(K),
+         n = as.factor(n)) %>% 
+  ggplot(aes(x = K, y = value, fill = n)) +
+  geom_boxplot() +
+  facet_wrap(~statistic, scales = "free_y") +
+  theme_classic() +
+  labs(x = "K", y = "Value", fill = "Sample size") +
+  theme(legend.position = "bottom")
+ggsave("fig/sim_boxplot.png", height = 14, width = 21)
+```
+
+
+
+
+
+```{r}
+L <- 2
+ones <- rep(1, L)
+r <- 5
+
+r_vec <- r/sqrt(L) * ones
+sqrt(sum(r_vec^2))
+
+x_vec <- 1/2 * r_vec
+y_vec <- -1/2 * r_vec
+sqrt(sum((x_vec - y_vec)^2))
+```
+
+```{r}
+T1 <- MASS::mvrnorm(n = 50, mu = x_vec, Sigma = diag(1, L))
+T2 <- MASS::mvrnorm(n = 50, mu = y_vec, Sigma = diag(1, L))
+
+sqrt(sum((colMeans(T1) - colMeans(T2))^2))
+```
+
+```{r}
+T1 <- matrix(rnorm(50 * L, mean = r/(2*sqrt(L))), ncol = L)
+T2 <- matrix(rnorm(50 * L, mean = -r/(2*sqrt(L))), ncol = L)
+
+sqrt(sum((colMeans(T1) - colMeans(T2))^2))
+```
+
+```{r}
+T1 <- matrix(rnorm(50 * L, mean = r), ncol = L)
+T2 <- matrix(rnorm(50 * L, mean = -r), ncol = L)
+
+sqrt(sum((colMeans(T1) - colMeans(T2))^2))
+```
+
+
+
+
+

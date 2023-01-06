@@ -1,0 +1,51 @@
+---
+title: "Purpose of the simulation study"
+output: html_document
+date: "2022-10-13"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+I have developed the Riemmanian version of the NIPALS algorithm to fit the Riemannian PLS model
+
+$$
+  \begin{aligned}
+    X_i &= \mathrm{Exp}_{\mu_X}\left( \sum_{l = 1}^L t_i^l p_l + e_i \right)\\
+    Y_i &= \mathrm{Exp}_{\mu_Y}\left( \sum_{l = 1}^L u_i^l q_l + f_i \right)\\
+    u_i^l &= \beta_0^{l}+ \beta_1^{l} t_i^l\, .
+  \end{aligned}
+$$
+
+The question I am investigating with my simulation studies is:
+
+> Does my Riemannian NIPALS algorithm actually fit the Riemannian PLS model?
+
+I have chosen to approach this question with the following sub question:
+
+> Given subspaces $P$, $Q$ and data $X_i$, $Y_i$ generated from the Riemannian PLS model, if I apply Riemannain NIPALS does it return $P$, $Q$, $X_i$ and $Y_i$?
+
+Since I am purely testing to see if the Riemannian NIPALS algorithm actually fits the Riemannian PLS model, I am not investigating the problem of overfitting to the data.
+
+My understanding is that the overfitting problem would be more of a concern in asking about the predictive power of the model, rather than whether my algorithm does what I claim.
+
+# Caveats
+
+This **does not** test recovery of 
+
+1. $t$ and $u$.  I am not investigating the scores in my work.  I also think these would be very hard to measure if recovered.
+2. $\beta_0$ and $\beta_1$. I am not investigating the coefficients in my work.  I am also strongly suspicious that these are not recovered simply due to the nature of the model.  For example, I think changes in $\beta_0$ may actually just be captured in the Frechet means.
+3. $L$
+
+The reason I investigate extracting $K = 1, 2, \dots, 2L$ latent variables is because we do not "know" the true value of $K$ when we fit the Riemannian NIPALS algorithm, i.e. We do not "know" $L = 5$.  I thought it wise to investigate how our recovery changes through increasing values of latent variables extracted.  In practice, we would choose $K$ with cross validation.
+
+# Some solutions
+
+If there is grave concern with overfitting here, I suggest one of the following approaches:
+
+1. Only consider the case of $K = L$, i.e. extracting the true model.
+2. Only consider the cases of $K = 1, 2, \dots, L$, i.e. never extract more than the true number of latent variables.
+3. Acknowledge possible overfitting for $K>L$ in the discussion of the results.
+

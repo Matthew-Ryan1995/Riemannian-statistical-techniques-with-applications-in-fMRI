@@ -1,0 +1,8 @@
+"0","X <- df$cors"
+"0","Y <- model.matrix(~ age + group, data = df) %>% "
+"0","    as.matrix() %>% "
+"0","    .[, -1]"
+"0","  "
+"0","final_model <- riemannian_pls(X = X, Y = Y, L = 1, tol = 1e-4, max.iter = 20, "
+"0","                      type_x = ""affine"", type_y = ""euclidean"", method = ""tangent"", scale = T)"
+"0",""

@@ -1,0 +1,36 @@
+---
+title: "Model terminology"
+output: html_document
+date: "2022-11-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+> Notation:  I will write $\mathrm{Exp}(p, V) = \mathrm{Exp}_{p}(V)$ for $p \in M$ and $V \in T_p M$.  It makes writing down the geodesic regression model cleaner.
+
+
+## Geodesic regression
+
+Consider response data $Y_1, Y_2, \dots, Y_n$ on a complete Riemannian manifold $M$, and predictor data $x_1, x_2, \dots, x_n \in \mathbb{R}$.  The geodesic regression model propose there is $p \in M$ and $\vec{V} \in T_p M$ such that
+
+\[
+  Y_i = \mathrm{Exp}(\mathrm{Exp}(p, \vec{V} x_i), \vec{\epsilon_i})
+\]
+
+where $\vec{\epsilon_i} \in T_{\mathrm{Exp}(p, \vec{V} x_i)} M$ denotes the error term.
+
+## Terminology question
+
+Suppose the $\mu_Y$ is the Frechet mean of $Y_1, Y_2, \dots, Y_n$ and fix $p = \mu_Y$.  The would the model
+
+\[
+  Y_i = \mathrm{Exp}(\mathrm{Exp}(\mu_Y, \vec{V} x_i), \vec{\epsilon_i})
+\]
+
+be better called
+
+1. No intercept geodesic regression
+2. Geodesic regression through the origin
+3. Geodesic regression through the Frechet mean

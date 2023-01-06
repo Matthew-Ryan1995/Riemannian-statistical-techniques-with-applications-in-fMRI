@@ -1,0 +1,49 @@
+---
+title: "Template Title"
+author: "Matt Ryan"
+date: \today
+output: 
+  html_document:
+    toc: yes
+    toc_float: yes
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+pacman::p_load(tidyverse, phdWork)
+```
+
+```{r}
+X <- model.matrix(~age + group + sex + eye, data = df)
+H <- X %*% solve(t(X) %*% X) %*% t(X)
+I <- diag(1, nrow(X))
+R <- I - H
+G_resid <- R %*% as.matrix(D_geo)%*% R
+G_resid <- as.dist(G_resid)
+G_fit <- H %*% as.matrix(D_geo)%*% H
+G_fit <- as.dist(G_fit)
+```
+
+
+```{r}
+tmp <- cmdscale(G_resid, k = 5)
+full_tmp <- cmdscale(G_fit, k = 5)
+```
+
+```{r}
+plot(full_tmp[, 1], tmp[, 1])
+plot(full_tmp[, 2], tmp[, 2])
+```
+
+```{r}
+df %>% 
+  select(age , group , sex , eye) %>% 
+  cbind(as_tibble(tmp), as_tibble(full_tmp) %>% 
+          rename(T1 = V1, T2 = V2, T3 = V3, T4 = V4, T5 = V5)) %>% 
+  ggplot(aes(T1, V4, colour = group, shape = group)) +
+  geom_point()
+```
+
+
+

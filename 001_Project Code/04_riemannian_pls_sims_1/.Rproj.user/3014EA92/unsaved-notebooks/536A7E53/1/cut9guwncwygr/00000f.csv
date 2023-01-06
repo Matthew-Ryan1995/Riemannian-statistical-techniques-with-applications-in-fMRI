@@ -1,0 +1,6 @@
+"0","dist <- map2_dbl(TP, X,"
+"0","             function(tp, x){"
+"0","               sum((tp - x)^2)"
+"0","             }) %>% "
+"0","  mean() %>% "
+"0","  sqrt()"

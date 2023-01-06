@@ -1,0 +1,20 @@
+\documentclass[border=3mm,tikz,preview]{standalone}
+\usetikzlibrary{intersections}
+\usepackage{amsmath}
+\usetikzlibrary{shapes.misc}
+
+\tikzset{cross/.style={cross out, draw=black, minimum size=2*(#1-\pgflinewidth), inner sep=0pt, outer sep=0pt},
+	%default radius will be 1pt. 
+	cross/.default={2pt}}
+
+\begin{document}
+\begin{tikzpicture}
+	\draw[thin,gray!40] (-2,-2) grid (2,2);
+	\draw[<->] (-2,0)--(2,0);
+	\draw[<->] (0,-2)--(0,2);
+	\draw[line width=1.25pt,blue,-stealth](0,0)--(1,1) node[anchor=south west]{$\boldsymbol{y}$};
+	\draw[line width=1.25pt,red,-stealth](0,0)--(1, 0) node[anchor=north east]{$\boldsymbol{x}$};
+	\draw[line width=1.25pt,-stealth, dotted] (1, 0) -- (1, 1) node[anchor=west, yshift = -0.5cm]{$\mathrm{Log}_{\boldsymbol{x}}(\boldsymbol{y})$};
+	\draw[line width=1.25pt,-stealth] (0, 0) -- (0, 1) node[anchor=east, yshift=-0.5cm]{$\boldsymbol{y} - \boldsymbol{x}$};
+\end{tikzpicture}
+\end{document}

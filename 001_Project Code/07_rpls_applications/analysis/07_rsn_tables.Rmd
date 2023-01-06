@@ -1,0 +1,103 @@
+---
+title: "rsn_tables"
+output: 
+  pdf_document:
+    keep_tex: TRUE
+date: "2022-12-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+pacman::p_load(tidyverse, kableExtra)
+```
+
+
+# COBRE
+
+```{r}
+regions <- read_csv(here::here("data/msdl_rois_labels.csv"),
+                    col_types = cols())
+
+regions <- regions %>% 
+  select(region, rsn) %>% 
+  add_count(rsn) %>% 
+  arrange(-n) %>% 
+  mutate(n = row_number()) %>% 
+  group_by(rsn)
+start_rsn <- regions %>% 
+  slice(1) %>%
+  arrange(n) %>% 
+  pull(n)
+end_rsn <- regions %>% 
+  slice_tail(n = 1) %>% 
+  arrange(n) %>% 
+  pull(n)
+labels <- regions %>% 
+  distinct(rsn) %>% 
+  pull(rsn)
+```
+
+```{r}
+tab <- regions %>% 
+  ungroup() %>% 
+  select(region) %>% 
+  kbl(booktabs = T,
+      col.names = "",
+      caption = "", 
+      position = "htbp", 
+      align = c("l"), 
+  ) %>% 
+  kable_styling(latex_options = "striped") 
+for(i in seq_along(labels)){
+  tab <- tab %>% 
+    pack_rows(group_label = labels[i], start_row = start_rsn[i], end_row = end_rsn[i])
+}
+tab
+```
+
+
+
+
+# ABIDE
+
+```{r}
+regions <- read_csv(here::here("data/aal_to_rsn.csv"),
+                    col_types = cols())
+
+regions <- regions %>% 
+  select(region, rsn) %>% 
+  arrange(rsn) %>% 
+  add_count(rsn) %>% 
+  arrange(-n) %>% 
+  mutate(n = row_number()) %>% 
+  group_by(rsn)
+start_rsn <- regions %>% 
+  slice(1) %>%
+  arrange(n) %>% 
+  pull(n)
+end_rsn <- regions %>% 
+  slice_tail(n = 1) %>% 
+  arrange(n) %>% 
+  pull(n)
+labels <- regions %>% 
+  distinct(rsn) %>% 
+  pull(rsn)
+```
+
+```{r}
+tab <- regions %>% 
+  ungroup() %>% 
+  select(region) %>% 
+  kbl(booktabs = T,
+      col.names = "",
+      caption = "", 
+      position = "htbp", 
+      align = c("l"), 
+  ) %>% 
+  kable_styling(latex_options = "striped") 
+for(i in seq_along(labels)){
+  tab <- tab %>% 
+    pack_rows(group_label = labels[i], start_row = start_rsn[i], end_row = end_rsn[i])
+}
+tab
+```

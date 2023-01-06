@@ -1,0 +1,4 @@
+"0","tmp2 <- tmp %>% "
+"0","  # group_by(n, sim, K, sig) %>%"
+"0","  mutate(model = pmap(list(X, Y, K), perform_pls)) %>% "
+"0","  unnest(model)"

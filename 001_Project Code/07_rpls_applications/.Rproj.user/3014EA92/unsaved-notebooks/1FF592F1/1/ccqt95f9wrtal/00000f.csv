@@ -1,0 +1,3 @@
+"0","ones <- rep(1, n1 + n2)"
+"0","I <- diag(n1 + n2)"
+"0","J <- I - ones %*% t(ones)/(n1+n2)"

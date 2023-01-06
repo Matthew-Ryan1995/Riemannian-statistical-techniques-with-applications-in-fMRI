@@ -1,0 +1,7 @@
+"0","p <- 5"
+"0","n <- n1 + n2"
+"0","Y <- matrix(rnorm(p * n), ncol = p)"
+"0","# Y <- scale(Y)"
+"0","D <- dist(Y)"
+"0","D.mat <- as.matrix(D)"
+"0","G <- MDMR::gower(D)"

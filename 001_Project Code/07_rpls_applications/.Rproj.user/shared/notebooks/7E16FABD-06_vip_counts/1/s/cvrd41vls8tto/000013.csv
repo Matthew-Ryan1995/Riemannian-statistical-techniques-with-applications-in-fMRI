@@ -1,0 +1,3 @@
+"0","sig_abide <- sig_abide %>% "
+"0","  as_tibble(rownames = ""pred"") %>% "
+"0","  mutate(across(where(is.numeric), ~.x < 0.05))"

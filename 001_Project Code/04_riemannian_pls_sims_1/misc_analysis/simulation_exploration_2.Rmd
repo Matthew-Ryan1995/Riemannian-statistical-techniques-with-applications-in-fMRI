@@ -1,0 +1,106 @@
+---
+title: "Noise is bad"
+output: 
+  html_document:
+    toc: yes
+    toc_float: yes
+date: "2022-10-06"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.asp = 1.5)
+pacman::p_load(tidyverse, patchwork)
+```
+
+
+
+```{r}
+get_data <- function(folder){
+  fl <- list.files(here::here(glue::glue("results/{folder}")), full.names = T, recursive = T)
+  fl <- fl[!str_detect(fl, "presim")]
+  
+  df <- map_dfr(fl, read_rds)
+  return(df)
+}
+
+make_plots <- function(df, var, x_type, y_type){
+  df <- df %>% 
+    filter(type_x == x_type, type_y == y_type) %>% 
+    rename(var = all_of(var)) %>% 
+    mutate(K = as.factor(K), var = as.factor(var))
+  
+  
+  p1 <- df %>% 
+    select(K, var, P_r2, Q_r2) %>% 
+    pivot_longer(-c(K, var)) %>% 
+    ggplot(aes(x = K, y = value, fill = var)) +
+    geom_boxplot(show.legend = FALSE) +
+    facet_wrap(~name, ncol = 2) +
+    theme_classic()
+  p2 <- df %>% 
+    select(K, var, X_r2, Y_r2) %>% 
+    pivot_longer(-c(K, var)) %>% 
+    ggplot(aes(x = K, y = value, fill = var)) +
+    geom_boxplot(show.legend = FALSE) +
+    facet_wrap(~name, ncol = 2) +
+    theme_classic()
+  p3 <- df %>% 
+    select(K, var, X_rmse, Y_rmse) %>% 
+    pivot_longer(-c(K, var)) %>% 
+    ggplot(aes(x = K, y = value, fill = var)) +
+    geom_boxplot() +
+    facet_wrap(~name, ncol = 2) +
+    theme_classic() +
+    labs(fill = var) +
+    theme(legend.position = "bottom")
+  
+  return(p1/p2/p3)
+}
+```
+
+# The effect of noise
+
+```{r}
+var_folder_name <- "noise"
+var <- "sig"
+df <- get_data(var_folder_name)
+```
+
+```{r}
+make_plots(df, var, "affine", "affine")
+```
+
+# Varying p with noise
+
+```{r}
+var_folder_name <- "p"
+var <- "x_dim"
+df <- get_data(var_folder_name)
+```
+
+```{r}
+make_plots(df, var, "affine", "affine")
+```
+
+# Varying p without noise
+
+> Disclaimer: Only 10 sims done here
+
+```{r}
+var_folder_name <- "sub"
+var <- "x_dim"
+df <- get_data(var_folder_name)
+```
+
+
+```{r}
+make_plots(df, var, "affine", "affine")
+```
+
+# Test
+
+```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE} 
+
+```
+

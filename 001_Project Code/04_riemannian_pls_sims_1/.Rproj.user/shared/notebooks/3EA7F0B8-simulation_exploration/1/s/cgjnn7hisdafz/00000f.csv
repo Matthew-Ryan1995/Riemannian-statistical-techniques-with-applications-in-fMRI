@@ -1,0 +1,3 @@
+"0","var_folder_name <- ""noise"""
+"0","var <- ""sig"""
+"0","df <- get_data(var_folder_name)"

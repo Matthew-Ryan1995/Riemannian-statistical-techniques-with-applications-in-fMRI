@@ -1,0 +1,6 @@
+"0","tmp %>% "
+"0","  mutate(K = as.factor(K)) %>% "
+"0","  pivot_longer(-c(id, K)) %>% "
+"0","  ggplot(aes(x = K, y = value, fill = name)) +"
+"0","  geom_boxplot() +"
+"0","  facet_wrap(~name, scales = ""free_y"")"

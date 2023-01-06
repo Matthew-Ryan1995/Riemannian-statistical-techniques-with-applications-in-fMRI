@@ -1,0 +1,5 @@
+"0","tmp2 <- get_model_metrics(tmp, assessment(cv_folds$splits[[1]]), 1)"
+"0","Y_test <- model.matrix(~ age + group, data = assessment(cv_folds$splits[[1]])) %>% "
+"0","    as.matrix() %>% "
+"0","    .[, -1]"
+"0","Y_test <- t(t(Y_test) - tmp$muY) "

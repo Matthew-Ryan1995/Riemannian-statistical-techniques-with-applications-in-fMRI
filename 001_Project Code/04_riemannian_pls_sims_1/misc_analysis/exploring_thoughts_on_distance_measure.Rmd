@@ -1,0 +1,756 @@
+---
+title: "Untitled"
+output: html_document
+date: "2022-09-12"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(tidyverse, phdWork)
+```
+
+
+```{r}
+set.seed(1234)
+
+x_dim <- y_dim <- 2
+
+sig <- 0
+
+p <- choose(x_dim + 1, 2)
+q <- choose(y_dim + 1, 2)
+L <- 2
+n <- 50
+r <- 0
+
+muX <- muY <- diag(1, x_dim)
+# muX[1, 2] <- muX[2, 1] <- 0.999
+# muY[1, 2] <- muY[2, 1] <- -0.999
+
+# P <- matrix(rnorm(L*p), nrow = p, ncol = L)
+# Q <- matrix(rnorm(L*q), nrow = q, ncol = L)
+P <- Q <- diag(1, p, nrow = p)
+P <- Q <- P[, 2:3]
+# Make P and Q orthogonal
+if(p < L){
+  P <- t(svd(P)$v)
+}else{
+  P <- svd(P)$u
+}
+if(q < L){
+  Q <- t(svd(Q)$v)
+}else{
+  Q <- svd(Q)$u
+}
+
+
+## Create the scores
+Tmat <- rbind(matrix(rnorm(n/2 * L, mean = r), nrow = n/2),
+              matrix(rnorm(n/2 * L, mean = -r), nrow = n/2))
+
+Tmat1 <- cbind(rnorm(n * L / 2, mean = r), rnorm(n * L / 2, mean = r))
+Tmat2 <- cbind(rnorm(n * L / 2, mean = -r), rnorm(n * L / 2, mean = -r))
+Tmat <- rbind(Tmat1, Tmat2)
+## Scale the scores about 0
+Tmat <- apply(Tmat, 2, scale, scale = FALSE)
+
+
+P_mat <- map(1:L,
+             function(l){
+               p_vec <- P[, l]
+               unvec(muX, vec = p_vec)
+             })
+
+X <- map(1:n,
+         function(i){
+           t_l <- Tmat[i, ] # Scores for subject
+           
+           p_l <- map2(P_mat, t_l, ~.x * .y) # Multiply scores by loading and add
+           p_l <- Reduce("+", p_l)
+           
+           # Make symmetric noise matrix
+           E <- matrix(rnorm(x_dim^2, sd = sig), ncol = x_dim)
+           E <- (E + t(E))/2
+           
+           return(
+             affine_exp(muX, p_l + E) # Push down to manifold
+           )
+         })
+
+Q_mat <- map(1:L,
+             function(l){
+               q_vec <- Q[, l]
+               unvec(muY, vec = q_vec)
+             })
+
+Y <- map(1:n,
+         function(i){
+           t_l <- Tmat[i, ] # Scores for subject, assuming B = I
+           
+           p_l <- map2(Q_mat, t_l, ~.x * .y) # Multiply scores by loading and add
+           p_l <- Reduce("+", p_l)
+           
+           # Make symmetric noise matrix
+           E <- matrix(rnorm(y_dim^2, sd = sig), ncol = y_dim)
+           E <- (E + t(E))/2
+           
+           return(
+             affine_exp(muY, p_l + E) # Push down to manifold
+           )
+         })
+```
+
+```{r}
+mu1_X <- get_frechet_mean(X)
+mu1_Y <- get_frechet_mean(Y)
+```
+
+```{r}
+d_x_affine <- affine_dist(X)
+d_x_euc <- dist(linearise_data(X, mu1_X))
+d_x_euc1 <- dist(linearise_data(X, muX))
+plot(d_x_affine, d_x_euc)
+abline(0, 1)
+```
+
+
+
+
+```{r}
+m1 <- mean(d_x_affine - d_x_euc)
+m_c2 <- var(d_x_affine - d_x_euc)
+(gamma <- mean((d_x_affine - d_x_euc - m1)^3)/((m_c2)^(3/2)))
+(kappa <- mean((d_x_affine - d_x_euc - m1)^4)/((m_c2)^(4/2)))
+```
+
+
+
+```{r}
+plot(d_x_affine, d_x_euc)
+abline(lm(d_x_euc ~ d_x_affine), col = "red")
+```
+
+```{r}
+hist(d_x_affine - d_x_euc)
+hist(d_x_affine^2 - d_x_euc^2)
+```
+
+```{r}
+r
+mean(d_x_affine^2 - d_x_euc^2)
+median(d_x_affine^2 - d_x_euc^2)
+max(d_x_affine^2 - d_x_euc^2)
+```
+
+```{r}
+r
+mean(d_x_affine^2 - d_x_euc^2)
+median(d_x_affine^2 - d_x_euc^2)
+max(d_x_affine^2 - d_x_euc^2)
+```
+
+# experiment
+
+```{r}
+make_t <- function(r){
+  theta <- seq(-pi, pi - 1e-5, length.out =20)
+  x <- cbind(r * cos(theta), r * sin(theta))
+  return(x)
+}
+get_data <- function(r, make_t = F){
+  # set.seed(1234)
+  
+  x_dim <- y_dim <- 2
+  
+  sig <- 0
+  
+  p <- choose(x_dim + 1, 2)
+  q <- choose(y_dim + 1, 2)
+  L <- 2
+  n <- 20
+  
+  muX <- muY <- diag(1, x_dim)
+  # muX[1, 2] <- muX[2, 1] <- 0.999
+  # muY[1, 2] <- muY[2, 1] <- -0.999
+  
+  # P <- matrix(rnorm(L*p), nrow = p, ncol = L)
+  # Q <- matrix(rnorm(L*q), nrow = q, ncol = L)
+  P <- Q <- diag(1, p, nrow = p)
+  P <- Q <- P[, 2:3]
+  # Make P and Q orthogonal
+  if(p < L){
+    P <- t(svd(P)$v)
+  }else{
+    P <- svd(P)$u
+  }
+  if(q < L){
+    Q <- t(svd(Q)$v)
+  }else{
+    Q <- svd(Q)$u
+  }
+  
+  
+  ## Create the scores
+  if(make_t){
+    Tmat <- make_t(r)
+  }else{
+    Tmat1 <- cbind(rnorm(n * L / 2, mean = r/sqrt(L)), rnorm(n * L / 2, mean = r))
+    Tmat2 <- cbind(rnorm(n * L / 2, mean = -r/sqrt(L)), rnorm(n * L / 2, mean = -r))
+    Tmat <- rbind(Tmat1, Tmat2)
+    ## Scale the scores about 0
+    Tmat <- apply(Tmat, 2, scale, scale = FALSE)
+    
+  }
+  
+  
+  P_mat <- map(1:L,
+               function(l){
+                 p_vec <- P[, l]
+                 unvec(muX, vec = p_vec)
+               })
+  
+  X <- map(1:n,
+           function(i){
+             t_l <- Tmat[i, ] # Scores for subject
+             
+             p_l <- map2(P_mat, t_l, ~.x * .y) # Multiply scores by loading and add
+             p_l <- Reduce("+", p_l)
+             
+             # Make symmetric noise matrix
+             E <- matrix(rnorm(x_dim^2, sd = sig), ncol = x_dim)
+             E <- (E + t(E))/2
+             
+             return(
+               affine_exp(muX, p_l + E) # Push down to manifold
+             )
+           })
+  
+  return(X)
+  
+}
+get_compares <- function(r, make_t = F){
+  dat <- get_data(r, make_t)
+  
+  mu1_X <- get_frechet_mean(dat, cores = 6)
+  
+  d1 <- affine_dist(dat) %>% as.numeric()
+  d2 <- dist(linearise_data(dat, mu1_X)) %>% as.numeric()
+  
+  p <- ggplot(tibble(aff = d1, euc = d2), aes(aff, euc)) + geom_point() + ggtitle(r)
+  mean_diff <- mean(d1^2 -d2^2)
+  median_diff <- median(d1^2 -d2^2)
+  max_diff <- max(d1^2 -d2^2)
+  
+  return(
+    tibble(
+      r = r,
+      p = list(p), 
+      mean_diff = mean_diff,
+      median_diff = median_diff,
+      max_diff = max_diff
+    )
+  )
+}
+```
+
+```{r}
+r_vals <- seq(0, 8, by = 0.5)
+res <- map_dfr(r_vals, get_compares)
+```
+
+```{r}
+res
+```
+
+```{r}
+walk(1:nrow(res), ~print(res$p[[.x]]))
+```
+
+```{r}
+res %>% 
+  filter(r < 8) %>% 
+  select(-p, -max_diff) %>% 
+  pivot_longer(-r) %>% 
+  ggplot(aes(r, value, col = name)) +
+  geom_point() 
+```
+
+```{r}
+
+```
+
+
+
+
+
+# misc
+
+```{r}
+mean(abs(d_x_affine -d_x_euc))
+```
+
+```{r}
+tmp_resid <- residuals(lm(d_x_euc ~ d_x_affine))
+tmp_fit <- fitted(lm(d_x_euc ~ d_x_affine))
+```
+
+```{r}
+mean(tmp_resid)
+median(tmp_resid)
+```
+
+```{r}
+tmp_resid2 <- tmp_resid[abs(tmp_resid) > max(tmp_resid)]
+```
+
+
+```{r}
+m1 <- mean(tmp_resid)
+m_c2 <- var(tmp_resid)
+(gamma <- mean((tmp_resid - m1)^3)/((m_c2)^(3/2)))
+(kappa <- mean((tmp_resid - m1)^4)/((m_c2)^(4/2)))
+```
+
+```{r}
+m1 <- mean(tmp_resid2)
+m_c2 <- var(tmp_resid2)
+(gamma <- mean((tmp_resid2 - m1)^3)/((m_c2)^(3/2)))
+(kappa <- mean((tmp_resid2 - m1)^4)/((m_c2)^(4/2)))
+```
+
+
+
+```{r}
+plot(tmp_fit[abs(tmp_resid) < max(tmp_resid)], tmp_resid[abs(tmp_resid) < max(tmp_resid)])
+plot(tmp_fit[abs(tmp_resid) > max(tmp_resid)], tmp_resid2)
+```
+
+
+```{r}
+mean(tmp_resid2)
+median(tmp_resid2)
+length(tmp_resid2)/length(tmp_resid)
+```
+
+```{r}
+hist(tmp_resid)
+hist(tmp_resid[abs(tmp_resid) < max(tmp_resid)])
+hist(tmp_resid2)
+```
+
+
+
+```{r}
+lm(d_x_euc ~ d_x_affine) %>% 
+  summary()
+```
+
+
+```{r}
+d_y_affine <- affine_dist(Y)
+d_y_euc <- dist(linearise_data(Y, mu1_Y))
+d_y_euc1 <- dist(linearise_data(Y, muY))
+plot(d_y_affine, d_y_euc)
+plot(d_y_affine, d_y_euc1)
+```
+
+```{r}
+calc_riemannian_curvature <- function(P, V, W, U){
+  term1 <- W %*% solve(P) %*% V %*% solve(P) %*% U
+  term2 <- U %*% solve(P) %*% V %*% solve(P) %*% W
+  term3 <- V %*% solve(P) %*% W %*% solve(P) %*% U
+  term4 <- U %*% solve(P) %*% W %*% solve(P) %*% V
+  
+  res <- 1/4 * (term1 + term2 - term3 - term4)
+  
+  return(res)
+}
+calc_sectional_curvature <- function(P, U, V){
+  R <- affine_inner_product(P, calc_riemannian_curvature(P, U, V, V), U)
+  
+  UU <- affine_inner_product(P, U, U)
+  VV <- affine_inner_product(P, V, V)
+  UV <- affine_inner_product(P, U, V)
+  
+  bottom <- UU * VV - UV^2
+  
+  res <- R/bottom
+  
+  return(res)
+}
+```
+
+
+```{r}
+which(as.matrix(d_y_affine)>10 & as.matrix(d_y_euc)< 10, arr.ind = T)
+```
+
+```{r}
+Y[[36]]
+Y[[28]]
+```
+
+```{r}
+affine_dist((list(Y[[36]], Y[[28]])))
+```
+
+```{r}
+affine_dist((list(Y[[36]], mu1_Y)))
+affine_dist((list(Y[[28]], mu1_Y)))
+```
+
+```{r}
+sqrt(affine_inner_product(mu1_Y, 
+                          affine_log(mu1_Y, Y[[36]]) - affine_log(mu1_Y, Y[[28]]), 
+                          affine_log(mu1_Y, Y[[36]]) - affine_log(mu1_Y, Y[[28]])))
+```
+
+```{r}
+affine_inner_product(mu1_Y, affine_log(mu1_Y, Y[[28]]), affine_log(mu1_Y, Y[[36]]))
+affine_inner_product(mu1_Y, affine_log(mu1_Y, Y[[28]]), affine_log(mu1_Y, Y[[14]]))
+```
+
+```{r}
+affine_inner_product(mu1_Y, affine_log(mu1_Y, Y[[28]]), affine_log(mu1_Y, Y[[36]])) / (affine_norm(mu1_Y, affine_log(mu1_Y, Y[[28]])) * affine_norm(mu1_Y, affine_log(mu1_Y, Y[[36]])))
+```
+
+```{r}
+affine_inner_product(mu1_Y, affine_log(mu1_Y, Y[[28]]), affine_log(mu1_Y, Y[[14]])) / (affine_norm(mu1_Y, affine_log(mu1_Y, Y[[28]])) * affine_norm(mu1_Y, affine_log(mu1_Y, Y[[14]])))
+```
+
+```{r}
+tmp1 <- 10 * P_mat[[1]]
+E <- matrix(rnorm(4, sd = 1),2, 2)
+E <- (E + t(E))/2
+tmp <- tmp1 + E
+tmp2 <- 10 * P_mat[[2]]
+```
+
+
+```{r}
+affine_inner_product(muY, tmp1 , tmp)
+```
+
+```{r}
+affine_inner_product(muY, tmp1 , tmp) / (affine_norm(muY, tmp1) * affine_norm(muY, tmp))
+```
+
+```{r}
+affine_norm(muY, tmp1 - tmp)
+```
+
+
+```{r}
+affine_dist(list( affine_exp(muY, tmp1), affine_exp(muY, tmp) ))
+```
+
+```{r}
+affine_dist(list(affine_exp(muY, tmp1), affine_exp(muY, tmp), muY))
+```
+
+
+
+
+
+
+```{r}
+linearise_data((list(Y[[36]], Y[[28]])), mu1_Y) %>% dist()
+```
+
+```{r}
+calc_sectional_curvature(mu1_Y, affine_log(mu1_Y, Y[[36]]), affine_log(mu1_Y, Y[[28]]))
+```
+
+```{r}
+calc_sectional_curvature(mu1_Y, affine_log(mu1_Y, Y[[28]]), affine_log(mu1_Y, Y[[14]]))
+```
+
+
+```{r}
+Y[[28]]
+Y[[14]]
+```
+
+```{r}
+affine_dist((list(Y[[28]], Y[[14]])))
+```
+
+
+
+```{r}
+affine_dist((list(Y[[14]], mu1_Y)))
+affine_dist((list(Y[[28]], mu1_Y)))
+```
+
+```{r}
+sqrt(affine_inner_product(mu1_Y, 
+                          affine_log(mu1_Y, Y[[14]]) - affine_log(mu1_Y, Y[[28]]), 
+                          affine_log(mu1_Y, Y[[14]]) - affine_log(mu1_Y, Y[[28]])))
+```
+
+
+
+```{r}
+linearise_data((list(Y[[14]], Y[[28]])), mu1_Y) %>% dist()
+```
+
+
+
+
+
+
+
+
+
+```{r}
+mod1 <- riemannian_pls(X, Y, L = L, muX = mu1_X, muY = mu1_Y, 
+                       mc.cores = 4, tol = 1e-4, max.iter = 10)
+mod2 <- riemannian_pls(X, Y, L = L, muX = mu1_X, muY = mu1_Y,
+                       mc.cores = 4, method = "tangent", tol = 1e-4, max.iter = 10)
+```
+
+
+```{r}
+P1 <- do.call(cbind,map(mod1$loadingsX, vec, P = mu1_X))
+```
+
+
+
+```{r}
+P2 <- do.call(cbind, mod2$loadingsX)
+```
+
+
+```{r}
+P1
+P2
+```
+
+```{r}
+cancor(P1, P2, xcenter = F, ycenter = F)
+```
+
+```{r}
+cancor(P, P2, xcenter = F, ycenter = F)
+```
+
+```{r}
+cancor(P, P1, xcenter = F, ycenter = F)
+```
+
+
+
+```{r}
+A <- matrix(c(1, 0.5, 0.5, 1), 2, 2)
+B <- matrix(c(1, -0.5, -0.5, 1), 2, 2)
+mu <- X[[2]]
+```
+
+```{r}
+affine_dist(list(A, B))
+```
+
+```{r}
+dist(linearise_data(list(A, B), mu))
+```
+
+```{r}
+sum(log(geigen(A, B)$value)^2)
+sum(log(eigen(solve(A) %*% B)$value)^2)
+sum(log(eigen((A) %*% solve(B))$value)^2)
+```
+
+```{r}
+sum((expm::logm(translate_to_identity(mu, A)) - expm::logm(translate_to_identity(mu, B)))^2)
+```
+
+```{r}
+translate_to_identity(mu, A) %*% translate_to_identity(mu, B)
+translate_to_identity(mu, B) %*% translate_to_identity(mu, A)
+```
+
+
+
+
+
+
+
+```{r}
+mu1_X
+mu1_Y
+```
+
+```{r}
+get_frechet_mean(map(1:25, ~X[[.x]]))
+get_frechet_mean(map(26:50, ~X[[.x]]))
+```
+
+
+```{r}
+set.seed(1234)
+
+x_dim <- y_dim <- 2
+
+sig <- 0
+
+p <- choose(x_dim + 1, 2)
+q <- choose(y_dim + 1, 2)
+L <- 2
+n <- 50
+r <- 5
+
+muX1 <-  diag(1, x_dim)
+muX1[1, 2] <- muX1[2, 1] <- 0.5
+muY1 <- muX1
+muX2 <-  diag(1, x_dim)
+muX2[1, 2] <- muX2[2, 1] <- -0.9
+muY2 <- muX2
+# muX[1, 2] <- muX[2, 1] <- 0.999
+# muY[1, 2] <- muY[2, 1] <- -0.999
+
+# P <- matrix(rnorm(L*p), nrow = p, ncol = L)
+# Q <- matrix(rnorm(L*q), nrow = q, ncol = L)
+P <- Q <- diag(1, p, nrow = p)
+P <- Q <- P[, 2:3]
+# Make P and Q orthogonal
+if(p < L){
+  P <- t(svd(P)$v)
+}else{
+  P <- svd(P)$u
+}
+if(q < L){
+  Q <- t(svd(Q)$v)
+}else{
+  Q <- svd(Q)$u
+}
+
+
+## Create the scores
+
+Tmat1 <- matrix(rnorm(n/2 * L), ncol = L)
+Tmat2 <- matrix(rnorm(n/2 * L), ncol = L)
+## Scale the scores about 0
+Tmat1 <- apply(Tmat1, 2, scale, scale = FALSE)
+Tmat2 <- apply(Tmat2, 2, scale, scale = FALSE)
+
+
+P_mat <- map(1:L,
+             function(l){
+               p_vec <- P[, l]
+               unvec(muX, vec = p_vec)
+             })
+
+X <- map(1:n,
+         function(i){
+           if(i <= n/2){
+             t_l <- Tmat1[i, ] # Scores for subject
+           }else{
+             k <- i - n/2
+             t_l <- Tmat2[k, ] # Scores for subject
+           }
+           
+           
+           p_l <- map2(P_mat, t_l, ~.x * .y) # Multiply scores by loading and add
+           p_l <- Reduce("+", p_l)
+           
+           # Make symmetric noise matrix
+           E <- matrix(rnorm(x_dim^2, sd = sig), ncol = x_dim)
+           E <- (E + t(E))/2
+           
+           return(
+             if(i <= n/2){
+               affine_exp(muX1, p_l + E) # Push down to manifold
+             }else{
+               affine_exp(muX2, p_l + E)
+             }
+           )
+         })
+
+Q_mat <- map(1:L,
+             function(l){
+               q_vec <- Q[, l]
+               unvec(muY, vec = q_vec)
+             })
+
+Y <- map(1:n,
+         function(i){
+           if(i <= n/2){
+             t_l <- Tmat1[i, ] # Scores for subject
+           }else{
+             k <- i - n/2
+             t_l <- Tmat2[k, ] # Scores for subject
+           }
+           
+           
+           p_l <- map2(Q_mat, t_l, ~.x * .y) # Multiply scores by loading and add
+           p_l <- Reduce("+", p_l)
+           
+           # Make symmetric noise matrix
+           E <- matrix(rnorm(x_dim^2, sd = sig), ncol = y_dim)
+           E <- (E + t(E))/2
+           
+           return(
+             if(i <= n/2){
+               affine_exp(muY1, p_l + E) # Push down to manifold
+             }else{
+               affine_exp(muY2, p_l + E)
+             }
+           )
+         })
+```
+
+
+```{r}
+mu2_X <- get_frechet_mean(X, cores = 6)
+mu2_Y <- get_frechet_mean(Y,  cores = 6)
+```
+
+```{r}
+X_sub <- map(which(map_dbl(X, Matrix::rankMatrix, tol = 1e-7)> 1), ~X[[.x]])
+d_x_affine <- affine_dist(X_sub)
+d_x_euc <- dist(linearise_data(X_sub, mu2_X))
+plot(d_x_affine, d_x_euc)
+```
+
+```{r}
+Y_sub <- map(which(map_dbl(Y, Matrix::rankMatrix, tol = 1e-7)> 1), ~Y[[.x]])
+d_y_affine <- affine_dist(Y_sub)
+d_y_euc <- dist(linearise_data(Y_sub, mu2_Y))
+plot(d_y_affine, d_y_euc)
+```
+
+```{r}
+mod1 <- riemannian_pls(X_sub, Y_sub, L = L, muX = mu2_X, muY = mu2_Y, 
+                       mc.cores = 4, tol = 1e-4, max.iter = 10)
+mod2 <- riemannian_pls(X_sub, Y_sub, L = L, muX = mu2_X, muY = mu2_Y, 
+                       mc.cores = 4, method = "tangent", tol = 1e-4, max.iter = 10)
+```
+
+
+```{r}
+P1 <- do.call(cbind,map(mod1$loadingsX, vec, P = mu2_X))
+```
+
+
+
+```{r}
+P2 <- do.call(cbind, mod2$loadingsX)
+```
+
+
+```{r}
+P1
+P2
+```
+
+```{r}
+cancor(P1, P2, xcenter = F, ycenter = F)
+```
+
+```{r}
+cancor(P, P2, xcenter = F, ycenter = F)
+```
+
+```{r}
+cancor(P, P1, xcenter = F, ycenter = F)
+```

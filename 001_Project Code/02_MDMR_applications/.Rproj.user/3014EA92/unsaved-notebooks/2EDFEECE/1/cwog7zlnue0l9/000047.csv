@@ -1,0 +1,6 @@
+"0","df %>% "
+"0","  select(age , group , sex , eye) %>% "
+"0","  cbind(as_tibble(tmp), as_tibble(full_tmp) %>% "
+"0","          rename(T1 = V1, T2 = V2, T3 = V3, T4 = V4, T5 = V5)) %>% "
+"0","  ggplot(aes(T1, V4, colour = group, shape = group)) +"
+"0","  geom_point()"

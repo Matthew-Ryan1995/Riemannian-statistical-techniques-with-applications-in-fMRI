@@ -1,0 +1,131 @@
+---
+title: "06_VIP counts"
+output: 
+  pdf_document:
+    keep_tex: TRUE
+date: "2022-12-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+pacman::p_load(tidyverse)
+```
+
+# COBRE
+
+```{r}
+fl <- list.files(here::here("results/cobre_vip/"), full.names = T)
+sig_cobre <- map(fl, read_rds)
+sig_cobre <- (Reduce("+", sig_cobre)/200)
+sig_cobre[1:39, ] <- 1
+sig_cobre <- sig_cobre %>%
+  apply(2, p.adjust, method = "fdr")
+```
+
+```{r}
+sig_cobre <- sig_cobre %>% 
+  as_tibble(rownames = "pred") %>% 
+  mutate(across(where(is.numeric), ~.x < 0.05))
+```
+
+### Age
+
+```{r}
+sig_cobre %>% 
+  count(full_vip, age) %>% 
+  filter(full_vip | age)
+```
+
+### Group
+
+```{r}
+sig_cobre %>% 
+  count(full_vip, groupPatient) %>% 
+  filter(full_vip | groupPatient)
+```
+
+### Total
+
+```{r}
+sig_cobre %>% 
+  filter(full_vip, !age, !groupPatient) 
+```
+
+### Cross-ways
+
+```{r}
+sig_cobre %>% 
+  count(full_vip, age, groupPatient) 
+```
+
+# ABIDE
+
+```{r}
+fl <- list.files(here::here("results/abide_vip/"), full.names = T)
+sig_abide <- map(fl, read_rds)
+sig_abide <- do.call(rbind, sig_abide)
+sig_abide <- sig_abide/200
+sig_abide[1:116, ] <- 1
+sig_abide <- sig_abide %>%
+  apply(2, p.adjust, method = "fdr")
+```
+
+```{r}
+sig_abide <- sig_abide %>% 
+  as_tibble(rownames = "pred") %>% 
+  mutate(across(where(is.numeric), ~.x < 0.05))
+```
+
+### Age
+
+```{r}
+sig_abide %>% 
+  count(full_vip, age) %>% 
+  filter(full_vip | age)
+```
+
+### Group
+
+```{r}
+sig_abide %>% 
+  count(full_vip, groupAutism) %>% 
+  filter(full_vip | groupAutism)
+```
+
+### Sex
+
+```{r}
+sig_abide %>% 
+  count(full_vip, sexMale) %>% 
+  filter(full_vip | sexMale)
+```
+
+### Eye
+
+```{r}
+sig_abide %>% 
+  count(full_vip, eyeClosed) %>% 
+  filter(full_vip | eyeClosed)
+```
+
+### Crossways
+
+```{r}
+sig_abide %>% 
+  filter(full_vip, age, groupAutism, sexMale, eyeClosed)
+```
+
+### Total
+
+```{r}
+library(kableExtra)
+sig_abide %>% 
+  filter(full_vip, !age, !groupAutism, !sexMale, !eyeClosed) %>% 
+  arrange(pred) %>% 
+  select(pred) %>% 
+  kbl() %>% 
+  kable_styling(latex_options = "striped")
+```
+
+
+

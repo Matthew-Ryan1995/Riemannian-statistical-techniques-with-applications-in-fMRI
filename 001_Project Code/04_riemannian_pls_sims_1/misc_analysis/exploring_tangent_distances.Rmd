@@ -1,0 +1,98 @@
+---
+title: "Untitled"
+output: html_document
+date: "2022-09-12"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(tidyverse, phdWork)
+```
+
+
+```{r}
+mu <- diag(1, 2)
+p <- c(0, 0, 1)
+P <- unvec(mu, p)
+P2 <- affine_exp(mu, P)
+
+rotate_p <- function(theta, p){
+  R <- matrix(
+    c(
+      1, 0, 0,
+      0, cos(theta), sin(theta), 
+      0, -sin(theta), cos(theta)
+    ), ncol = 3, byrow = T
+  )
+  
+  q <- R %*% p
+  
+  return(q)
+}
+
+rotate_and_scale <- function(theta, r, p){
+  q <- rotate_p(theta, p)
+  
+  return(r * q)
+}
+```
+
+
+
+
+```{r}
+angs <- seq(-pi/2, pi/2, length.out = 20) + rnorm(20, sd = 0.05)
+r_vals <- 1:10
+(params <- expand_grid(theta = angs, r = r_vals))
+```
+
+```{r}
+calc_distances <- function(theta, r){
+  
+  p <- r * c(0, 0, 1)
+  P <- unvec(mu, p)
+  P2 <- affine_exp(mu, P)
+  
+  q <- rotate_and_scale(theta, 1, p)
+  Q <- unvec(mu, q)
+  Q2 <- affine_exp(mu, Q)
+  d1 <- affine_norm(mu, P - Q)
+  
+  d2 <- affine_dist(list(P2, Q2))[1]
+  d3 <- affine_dist(list(P2, mu))[1]
+  d4 <- affine_dist(list(mu, Q2))[1]
+  
+  return(tibble(
+    theta = theta, 
+    r = r,
+    tangent_dist = d1,
+    manifold_dist = d2,
+    p_to_mean = d3,
+    q_to_mean = d4
+  ))
+}
+```
+
+```{r}
+ans <- pmap_dfr(params, calc_distances)
+```
+
+
+```{r}
+ans
+```
+
+
+```{r}
+ans %>% 
+  mutate(r = as.factor(r)) %>% 
+  ggplot(aes(x = manifold_dist, y = tangent_dist)) +
+  geom_line(aes(colour = theta, group = theta)) +
+  geom_point(aes(fill = r), 
+             shape = 21,
+             size = 2) +
+  harrypotter::scale_color_hp("ravenclaw") +
+  theme(legend.position = "top")
+```
+
+

@@ -1,0 +1,2 @@
+"0","set.seed(1234)"
+"0","cv_folds <- vfold_cv(df, strata = group)"

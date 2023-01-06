@@ -1,0 +1,700 @@
+---
+title: "Untitled"
+output: html_document
+date: "2022-10-31"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(tidyverse)
+```
+
+```{r}
+files <- list.files(here::here("results"), full.names = T, recursive = T)
+files <- files[str_detect(files, "summary")]
+df <- map_dfr(files, read_rds)
+```
+
+
+
+
+
+
+## General figs
+
+```{r}
+x_dim <- 10
+y_dim <- 10
+sigma <- 1
+tmp_df <- df %>% 
+  filter(sig == sigma, 
+         p == choose(x_dim + 1, 2), q == choose(y_dim + 1, 2))
+
+y_int <- expand_grid(
+  val = c(0.2, 0.4, 0.6, 0.8, 1),
+  metric = factor(c("P: R2", "Q: R2", "X: R2", "Y: R2",
+                    "X: RMSE", "Y: RMSE"),
+                  levels = c("P: R2", "Q: R2", "X: R2", "Y: R2",
+                             "X: RMSE", "Y: RMSE"))
+) %>% 
+  filter(!(metric %in% c("X: RMSE", "Y: RMSE")))
+
+tmp_df %>% 
+  pivot_longer(-(sig:L), names_to = "metric") %>% 
+  mutate(metric = case_when(
+    str_detect(metric, "P") ~ "P: R2",
+    str_detect(metric, "Q") ~ "Q: R2",
+    str_detect(metric, "X_r2") ~ "X: R2",
+    str_detect(metric, "Y_r2") ~ "Y: R2",
+    str_detect(metric, "X_rmse") ~ "X: RMSE",
+    str_detect(metric, "Y_rmse") ~ "Y: RMSE"
+  ),
+  metric = factor(metric,
+                  levels = c("P: R2", "Q: R2", "X: R2", "Y: R2",
+                             "X: RMSE", "Y: RMSE")),
+  K = as.factor(K),
+  n = as.factor(n)
+  ) %>% 
+  group_by(metric, n, K) %>% 
+  summarise(
+    median = median(value),
+    Q1 = quantile(value, 1/4),
+    Q3 = quantile(value, 3/4),
+    .groups = "drop"
+  ) %>% 
+  ggplot(aes(x = K, y = median, colour = n)) +
+  geom_hline(data = y_int, 
+             aes(yintercept = val),
+             lty = 2, colour = "gray90") +
+  geom_linerange(aes(ymin = Q1, ymax = Q3), 
+                 position = position_dodge(width = 0.5)) +
+  geom_point(position = position_dodge(width = 0.5)) +
+  facet_wrap(~metric, scale = "free_y") +
+  harrypotter::scale_color_hp_d("ravenclaw") +
+  labs(y = NULL, colour = "Sample size:",
+       title = str_c("Euclidean PLS\n", 
+                     "p = ", choose(x_dim + 1 , 2),
+                     "; q = ", choose(y_dim + 1, 2),
+                     "; sigma = ", sigma
+       )) +
+  theme_classic() +
+  theme(legend.position = "bottom",
+        text = element_text(size = 14),
+        strip.text = element_text(size = 20),
+        strip.background = element_rect(fill = "gray70"),
+        plot.title = element_text(hjust = 0.5))
+```
+
+
+
+
+## Sig 0
+
+### 1
+
+```{r}
+x_dim <- 15
+y_dim <- 15
+sigma <- 0
+N <- 150
+tmp_df <- df %>% 
+  filter(sig == sigma, 
+         p == choose(x_dim + 1, 2), 
+         q == choose(y_dim + 1, 2),
+         n == N
+  )
+
+y_int <- expand_grid(
+  val = c(0.2, 0.4, 0.6, 0.8, 1),
+  metric = factor(c("P: R2", "Q: R2", "X: R2", "Y: R2",
+                    "X: RMSE", "Y: RMSE"),
+                  levels = c("P: R2", "Q: R2", "X: R2", "Y: R2",
+                             "X: RMSE", "Y: RMSE"))
+) %>% 
+  filter(!(metric %in% c("X: RMSE", "Y: RMSE")))
+
+tmp_df %>% 
+  pivot_longer(-(sig:L), names_to = "metric") %>% 
+  mutate(metric = case_when(
+    str_detect(metric, "P") ~ "P: R2",
+    str_detect(metric, "Q") ~ "Q: R2",
+    str_detect(metric, "X_r2") ~ "X: R2",
+    str_detect(metric, "Y_r2") ~ "Y: R2",
+    str_detect(metric, "X_rmse") ~ "X: RMSE",
+    str_detect(metric, "Y_rmse") ~ "Y: RMSE"
+  ),
+  metric = factor(metric,
+                  levels = c("P: R2", "Q: R2", "X: R2", "Y: R2",
+                             "X: RMSE", "Y: RMSE")),
+  K = as.factor(K),
+  n = as.factor(n)
+  ) %>% 
+  group_by(metric, n, K) %>% 
+  summarise(
+    median = median(value),
+    Q1 = quantile(value, 1/4),
+    Q3 = quantile(value, 3/4),
+    .groups = "drop"
+  ) %>% 
+  filter(!(metric %in% c("X: RMSE", "Y: RMSE"))) %>% 
+  mutate(
+    gp2 = ifelse(str_detect(metric, "P|Q"),
+                 "Loading",
+                 "Data"),
+    gp = ifelse(str_detect(metric, "P|X"), 
+                "Predictor", 
+                "Response"),
+    label = case_when(
+      str_detect(metric, "P") ~ "P",
+      str_detect(metric, "Q") ~ "Q",
+      str_detect(metric, "X") ~ "X",
+      str_detect(metric, "Y") ~ "Y",
+    ),
+    gp = as.factor(gp)) %>% 
+  ggplot(aes(x = K, y = median, 
+             colour = gp, 
+             group = metric,
+             shape = gp2,
+             label = label
+  )) +
+  geom_hline(data = y_int, 
+             aes(yintercept = val),
+             lty = 2, colour = "gray90") +
+  geom_linerange(aes(ymin = Q1, ymax = Q3), 
+                 position = position_dodge(width = 0.5),
+                 lty = 2,
+                 alpha = 0.5
+  ) +
+  # geom_point(position = position_dodge(width = 0.5)) +
+  geom_text(position = position_dodge(width = 0.5)) +
+  # facet_wrap(~metric, scale = "free_y") +
+  harrypotter::scale_color_hp_d("ravenclaw") +
+  labs(y = NULL, 
+       colour = NULL,
+       shape = NULL,
+       title = str_c("Euclidean PLS\n", 
+                     "p = ", choose(x_dim + 1 , 2),
+                     "; q = ", choose(y_dim + 1, 2),
+                     "; sigma = ", sigma
+       )) +
+  theme_classic() +
+  theme(legend.position = "bottom",
+        text = element_text(size = 14),
+        strip.text = element_text(size = 20),
+        strip.background = element_rect(fill = "gray70"),
+        plot.title = element_text(hjust = 0.5)) 
+```
+
+
+
+### 2
+
+```{r}
+x_dim <- 15
+y_dim <- 15
+sigma <- 0
+N <- 150
+tmp_df <- df %>% 
+  filter(sig == sigma, 
+         p == choose(x_dim + 1, 2), 
+         q == choose(y_dim + 1, 2),
+         n == N
+  )
+
+y_int <- expand_grid(
+  val = c(0.2, 0.4, 0.6, 0.8, 1),
+  metric = factor(c("P: R2", "Q: R2", "X: R2", "Y: R2",
+                    "X: RMSE", "Y: RMSE"),
+                  levels = c("P: R2", "Q: R2", "X: R2", "Y: R2",
+                             "X: RMSE", "Y: RMSE"))
+) %>% 
+  filter(!(metric %in% c("X: RMSE", "Y: RMSE")))
+
+tmp_df %>% 
+  pivot_longer(-(sig:L), names_to = "metric") %>% 
+  mutate(metric = case_when(
+    str_detect(metric, "P") ~ "P: R2",
+    str_detect(metric, "Q") ~ "Q: R2",
+    str_detect(metric, "X_r2") ~ "X: R2",
+    str_detect(metric, "Y_r2") ~ "Y: R2",
+    str_detect(metric, "X_rmse") ~ "X: RMSE",
+    str_detect(metric, "Y_rmse") ~ "Y: RMSE"
+  ),
+  metric = factor(metric,
+                  levels = c("P: R2", "Q: R2", "X: R2", "Y: R2",
+                             "X: RMSE", "Y: RMSE")),
+  K = as.factor(K),
+  n = as.factor(n)
+  ) %>% 
+  group_by(metric, n, K) %>% 
+  summarise(
+    median = median(value),
+    Q1 = quantile(value, 1/4),
+    Q3 = quantile(value, 3/4),
+    .groups = "drop"
+  ) %>% 
+  filter(!(metric %in% c("X: RMSE", "Y: RMSE"))) %>% 
+  mutate(
+    gp2 = ifelse(str_detect(metric, "P|Q"),
+                 "Loading",
+                 "Data"),
+    gp = ifelse(str_detect(metric, "P|X"), 
+                "Predictor", 
+                "Response"),
+    label = case_when(
+      str_detect(metric, "P") ~ "P",
+      str_detect(metric, "Q") ~ "Q",
+      str_detect(metric, "X") ~ "X",
+      str_detect(metric, "Y") ~ "Y",
+    ),
+    gp = as.factor(gp)) %>% 
+  ggplot(aes(x = K, y = median, 
+             colour = gp, 
+             group = metric,
+             shape = gp2,
+             label = label
+  )) +
+  geom_hline(data = y_int, 
+             aes(yintercept = val),
+             lty = 2, colour = "gray90") +
+  geom_linerange(aes(ymin = Q1, ymax = Q3), 
+                 position = position_dodge(width = 0.5),
+                 # lty = 2,
+                 # alpha = 0.5
+  ) +
+  geom_point(position = position_dodge(width = 0.5)) +
+  # geom_text(position = position_dodge(width = 0.5)) +
+  # facet_wrap(~metric, scale = "free_y") +
+  harrypotter::scale_color_hp_d("ravenclaw") +
+  labs(y = NULL, 
+       colour = NULL,
+       shape = NULL,
+       title = str_c("Euclidean PLS\n", 
+                     "p = ", choose(x_dim + 1 , 2),
+                     "; q = ", choose(y_dim + 1, 2),
+                     "; sigma = ", sigma
+       )) +
+  theme_classic() +
+  theme(legend.position = "bottom",
+        text = element_text(size = 14),
+        strip.text = element_text(size = 20),
+        strip.background = element_rect(fill = "gray70"),
+        plot.title = element_text(hjust = 0.5)) 
+```
+
+
+```{r}
+pacman::p_load(tidyverse, gtable, grid, gridExtra)
+```
+
+```{r}
+# Some data
+df <- data.frame(
+  x = 1:10,
+  y = 1:10,
+  colour = factor(sample(1:3, 10, replace = TRUE)),
+  size = factor(sample(1:3, 10, replace = TRUE)))
+
+library(ggplot2)
+library(gridExtra)
+library(gtable)
+library(grid)
+
+### Step 1
+# Draw a plot with the colour legend
+(p1 <- ggplot(data = df, aes(x=x, y=y)) +
+    geom_point(aes(colour = colour)) +
+    theme_bw() +
+    theme(legend.position = "bottom"))
+
+# Extract the colour legend - leg1
+leg1 <- gtable_filter(ggplot_gtable(ggplot_build(p1)), "guide-box") 
+
+### Step 2
+# Draw a plot with the size legend
+(p2 <- ggplot(data = df, aes(x=x, y=y)) +
+    geom_point(aes(size = size)) +
+    theme_bw()+
+    theme(legend.position = "bottom"))
+
+# Extract the size legend - leg2
+leg2 <- gtable_filter(ggplot_gtable(ggplot_build(p2)), "guide-box") 
+
+# Step 3
+# Draw a plot with no legends - plot
+(plot <- ggplot(data = df, aes(x=x, y=y)) +
+    geom_point(aes(size = size, colour = colour)) +
+    theme_bw() +
+    theme(legend.position = "none"))
+
+### Step 4
+# Arrange the three components (plot, leg1, leg2)
+# The two legends are positioned outside the plot: 
+# one at the top and the other to the side.
+plotNew <- arrangeGrob( plot, leg1,
+                       heights = unit.c(unit(1, "npc") - leg1$height, leg1$height), 
+                       ncol = 1)
+
+plotNew <- arrangeGrob(plotNew, leg2,
+                       heights = unit.c(unit(1, "npc") - leg2$height, leg2$height),
+                       ncol = 1)
+
+grid.newpage()
+grid.draw(plotNew)
+```
+
+```{r}
+x_dim <- 15
+y_dim <- 15
+sigma <- 0
+N <- 150
+tmp_df <- df %>% 
+  filter(sig == sigma, 
+         p == choose(x_dim + 1, 2), 
+         q == choose(y_dim + 1, 2),
+         n == N
+  )
+
+y_int <- expand_grid(
+  val = c(0.2, 0.4, 0.6, 0.8, 1),
+  metric = factor(c("P: R2", "Q: R2", "X: R2", "Y: R2",
+                    "X: RMSE", "Y: RMSE"),
+                  levels = c("P: R2", "Q: R2", "X: R2", "Y: R2",
+                             "X: RMSE", "Y: RMSE"))
+) %>% 
+  filter(!(metric %in% c("X: RMSE", "Y: RMSE")))
+
+plot_df <- tmp_df %>% 
+  pivot_longer(-(sig:L), names_to = "metric") %>% 
+  mutate(metric = case_when(
+    str_detect(metric, "P") ~ "P: R2",
+    str_detect(metric, "Q") ~ "Q: R2",
+    str_detect(metric, "X_r2") ~ "X: R2",
+    str_detect(metric, "Y_r2") ~ "Y: R2",
+    str_detect(metric, "X_rmse") ~ "X: RMSE",
+    str_detect(metric, "Y_rmse") ~ "Y: RMSE"
+  ),
+  metric = factor(metric,
+                  levels = c("P: R2", "Q: R2", "X: R2", "Y: R2",
+                             "X: RMSE", "Y: RMSE")),
+  K = as.factor(K),
+  n = as.factor(n)
+  ) %>% 
+  group_by(metric, n, K) %>% 
+  summarise(
+    median = median(value),
+    Q1 = quantile(value, 1/4),
+    Q3 = quantile(value, 3/4),
+    .groups = "drop"
+  ) %>% 
+  filter(!(metric %in% c("X: RMSE", "Y: RMSE"))) %>% 
+  mutate(
+    gp2 = ifelse(str_detect(metric, "P|Q"),
+                 "Loading",
+                 "Data"),
+    gp = ifelse(str_detect(metric, "P|X"), 
+                "Predictor", 
+                "Response"),
+    label = case_when(
+      str_detect(metric, "P") ~ "P",
+      str_detect(metric, "Q") ~ "Q",
+      str_detect(metric, "X") ~ "X",
+      str_detect(metric, "Y") ~ "Y",
+    ),
+    gp = as.factor(gp)) 
+col_plot <- plot_df %>% 
+  ggplot(aes(x = K, y = median, 
+             colour = gp, 
+             group = metric,
+             # shape = gp2,
+             label = label
+  )) +
+  geom_hline(data = y_int, 
+             aes(yintercept = val),
+             lty = 2, colour = "gray90") +
+  geom_linerange(aes(ymin = Q1, ymax = Q3), 
+                 position = position_dodge(width = 0.5),
+                 # lty = 2,
+                 # alpha = 0.5
+  ) +
+  geom_point(position = position_dodge(width = 0.5)) +
+  # geom_text(position = position_dodge(width = 0.5)) +
+  # facet_wrap(~metric, scale = "free_y") +
+  harrypotter::scale_color_hp_d("ravenclaw") +
+  labs(y = NULL, 
+       colour = NULL,
+       shape = NULL,
+       title = str_c("Euclidean PLS\n", 
+                     "p = ", choose(x_dim + 1 , 2),
+                     "; q = ", choose(y_dim + 1, 2),
+                     "; sigma = ", sigma
+       )) +
+  theme_classic() +
+  theme(legend.position = "bottom",
+        text = element_text(size = 14),
+        strip.text = element_text(size = 20),
+        strip.background = element_rect(fill = "gray70"),
+        plot.title = element_text(hjust = 0.5))
+shape_plot <- plot_df %>% 
+  ggplot(aes(x = K, y = median, 
+             # colour = gp, 
+             group = metric,
+             shape = gp2,
+             label = label
+  )) +
+  geom_hline(data = y_int, 
+             aes(yintercept = val),
+             lty = 2, colour = "gray90") +
+  geom_linerange(aes(ymin = Q1, ymax = Q3), 
+                 position = position_dodge(width = 0.5),
+                 # lty = 2,
+                 # alpha = 0.5
+  ) +
+  geom_point(position = position_dodge(width = 0.5)) +
+  # geom_text(position = position_dodge(width = 0.5)) +
+  # facet_wrap(~metric, scale = "free_y") +
+  harrypotter::scale_color_hp_d("ravenclaw") +
+  labs(y = NULL, 
+       colour = NULL,
+       shape = NULL,
+       title = str_c("Euclidean PLS\n", 
+                     "p = ", choose(x_dim + 1 , 2),
+                     "; q = ", choose(y_dim + 1, 2),
+                     "; sigma = ", sigma
+       )) +
+  theme_classic() +
+  theme(legend.position = "bottom",
+        text = element_text(size = 14),
+        strip.text = element_text(size = 20),
+        strip.background = element_rect(fill = "gray70"),
+        plot.title = element_text(hjust = 0.5))
+full_plot <- plot_df %>% 
+  ggplot(aes(x = K, y = median, 
+             colour = gp,
+             group = metric,
+             shape = gp2,
+             label = label
+  )) +
+  geom_hline(data = y_int, 
+             aes(yintercept = val),
+             lty = 2, colour = "gray90") +
+  geom_linerange(aes(ymin = Q1, ymax = Q3), 
+                 position = position_dodge(width = 0.5),
+                 # lty = 2,
+                 # alpha = 0.5
+  ) +
+  geom_point(position = position_dodge(width = 0.5)) +
+  # geom_text(position = position_dodge(width = 0.5)) +
+  # facet_wrap(~metric, scale = "free_y") +
+  harrypotter::scale_color_hp_d("ravenclaw") +
+  labs(y = NULL, 
+       colour = NULL,
+       shape = NULL,
+       title = str_c("Euclidean PLS\n", 
+                     "p = ", choose(x_dim + 1 , 2),
+                     "; q = ", choose(y_dim + 1, 2),
+                     "; sigma = ", sigma
+       )) +
+  theme_classic() +
+  theme(legend.position = "none",
+        text = element_text(size = 14),
+        strip.text = element_text(size = 20),
+        strip.background = element_rect(fill = "gray70"),
+        plot.title = element_text(hjust = 0.5))
+
+col_leg <-  gtable_filter(ggplot_gtable(ggplot_build(col_plot)), "guide-box") 
+shape_leg <-  gtable_filter(ggplot_gtable(ggplot_build(shape_plot)), "guide-box") 
+
+final_plot <- arrangeGrob(full_plot, col_leg,
+                       heights = unit.c(unit(1, "npc") - col_leg$height, col_leg$height), 
+                       ncol = 1)
+final_plot <- arrangeGrob(final_plot, shape_leg,
+                       heights = unit.c(unit(1, "npc") - shape_leg$height, shape_leg$height), 
+                       ncol = 1)
+grid.newpage()
+grid.draw(final_plot)
+ggsave("tmp.png", plot = final_plot)
+```
+
+
+
+## Key finding 2
+
+```{r}
+df %>% 
+  filter(n == 150, K == 5, q == 55) %>% 
+  select(sig, p, q, P_r2) %>% 
+  group_by(sig, p) %>% 
+  summarise(median = median(P_r2), 
+            .groups = "drop") %>% 
+  ggplot(aes(x = sig, y = median, col = as.factor(p))) +
+  geom_point() +
+  harrypotter::scale_color_hp_d("ravenclaw") +
+  theme_classic() +
+  labs(x=  "Noise", y = "R2 (P)", colour = "Predictor dimension:") +
+  theme(legend.position = "bottom",
+        text = element_text(size = 20)) +
+  guides(colour = guide_legend(ncol = 2, byrow = TRUE))
+```
+
+THIS ONE
+
+```{r}
+df %>% 
+  filter(n == 150, K == 5, p == 55) %>% 
+  select(sig, p, q, Y_rmse) %>% 
+  group_by(sig, q) %>% 
+  summarise(median = median(Y_rmse), 
+            Q1 = min(Y_rmse),
+            Q3 = max(Y_rmse),
+            .groups = "drop") %>% 
+  ggplot(aes(x = sig, y = median, col = as.factor(q))) +
+  geom_point() +
+  harrypotter::scale_color_hp_d("ravenclaw") +
+  theme_classic() +
+  labs(x=  "Noise", y = "RMSE (Y)", colour = "Response dimension:") +
+  theme(legend.position = "bottom",
+        text = element_text(size = 20)) +
+  guides(colour = guide_legend(ncol = 2))
+```
+
+
+
+
+
+## Key finind 3
+
+
+
+```{r}
+df %>% 
+  filter(n == 80, q == 55, sig == 0.5) %>% 
+  select(K, p, q, Y_r2) %>% 
+  group_by(K, p) %>% 
+  summarise(median = median(Y_r2), 
+            Q1 = quantile(Y_r2, 1/4),
+            Q3 = quantile(Y_r2, 3/4),
+            .groups = "drop") %>% 
+  ggplot(aes(x = K, y = median, col = as.factor(p))) +
+  geom_linerange(aes(ymin = Q1, ymax = Q3), position = position_dodge(width = 0.5)) +
+  geom_point(position = position_dodge(width = 0.5)) +
+  harrypotter::scale_color_hp_d("ravenclaw") +
+  theme_classic() +
+  labs(x=  "K", y = "R2 (P)", colour = "Predictor dimension:") +
+  theme(legend.position = "bottom",
+        text = element_text(size = 20)) +
+  guides(colour = guide_legend(ncol = 2))
+```
+
+```{r}
+df %>% 
+  filter(n == 80, p == 55, sig == 0.5) %>% 
+  select(K, p, q, Y_r2) %>% 
+  group_by(K, q) %>% 
+  summarise(median = median(Y_r2), 
+            Q1 = quantile(Y_r2, 1/4),
+            Q3 = quantile(Y_r2, 3/4),
+            .groups = "drop") %>% 
+  ggplot(aes(x = K, y = median, col = as.factor(q))) +
+  geom_linerange(aes(ymin = Q1, ymax = Q3), position = position_dodge(width = 0.5)) +
+  geom_point(position = position_dodge(width = 0.5)) +
+  harrypotter::scale_color_hp_d("ravenclaw") +
+  theme_classic() +
+  labs(x=  "K", y = "R2 (P)", colour = "Predictor dimension:") +
+  theme(legend.position = "bottom",
+        text = element_text(size = 20)) +
+  guides(colour = guide_legend(ncol = 2))
+```
+
+
+## Key finind 4
+
+```{r}
+create_finding_4_plots(df, "X_rmse")
+```
+
+
+```{r}
+df %>% 
+  filter(p == 55, q == 55, sig == 0.5) %>% 
+  select(K, n, p, q, X_r2) %>% 
+  group_by(K, n) %>% 
+  summarise(median = median(X_r2), 
+            Q1 = quantile(X_r2, 1/4),
+            Q3 = quantile(X_r2, 3/4),
+            .groups = "drop") %>% 
+  ggplot(aes(x = K, y = median, col = as.factor(n))) +
+  geom_linerange(aes(ymin = Q1, ymax = Q3), position = position_dodge(width = 0.5)) +
+  geom_point(position = position_dodge(width = 0.5)) +
+  harrypotter::scale_color_hp_d("ravenclaw") +
+  theme_classic() +
+  labs(x=  "K", y = "R2 (P)", colour = "Predictor dimension:") +
+  theme(legend.position = "bottom",
+        text = element_text(size = 20)) +
+  guides(colour = guide_legend(ncol = 2))
+```
+
+```{r}
+df %>% 
+  filter(p == 55, q == 55, sig == 0.5) %>% 
+  select(K, n, p, q, Q_r2) %>% 
+  group_by(K, n) %>% 
+  summarise(median = median(Q_r2), 
+            Q1 = quantile(Q_r2, 1/4),
+            Q3 = quantile(Q_r2, 3/4),
+            .groups = "drop") %>% 
+  ggplot(aes(x = K, y = median, col = as.factor(n))) +
+  geom_linerange(aes(ymin = Q1, ymax = Q3), position = position_dodge(width = 0.5)) +
+  geom_point(position = position_dodge(width = 0.5)) +
+  harrypotter::scale_color_hp_d("ravenclaw") +
+  theme_classic() +
+  labs(x=  "K", y = "R2 (P)", colour = "Predictor dimension:") +
+  theme(legend.position = "bottom",
+        text = element_text(size = 20)) +
+  guides(colour = guide_legend(ncol = 2))
+```
+
+
+## Key finind 5
+
+
+
+```{r}
+df %>% 
+  filter(p == 55, q == 55, sig == 0.5, n == 80, K == 5) %>% 
+  select(X_rmse, Y_rmse) %>% 
+  pivot_longer(everything()) %>% 
+  ggplot(aes(x = name, y = value, fill = name)) +
+  geom_boxplot() +
+  harrypotter::scale_fill_hp_d("ravenclaw") +
+  theme_classic() +
+  labs(x=  "K", y = "R2 (P)", colour = "Predictor dimension:") +
+  theme(legend.position = "bottom",
+        text = element_text(size = 20)) +
+  guides(colour = guide_legend(ncol = 2))
+```
+
+```{r}
+df %>% 
+  filter(p == 55, q == 55, sig == 0.5, n == 80, K == 5) %>% 
+  select(X_r2, Y_r2) %>% 
+  pivot_longer(everything()) %>% 
+  ggplot(aes(x = name, y = value, fill = name)) +
+  geom_boxplot() +
+  harrypotter::scale_fill_hp_d("ravenclaw") +
+  theme_classic() +
+  labs(x=  "K", y = "R2 (P)", colour = "Predictor dimension:") +
+  theme(legend.position = "bottom",
+        text = element_text(size = 20)) +
+  guides(colour = guide_legend(ncol = 2))
+```
+
+```{r}
+df %>% 
+  filter(p == 55, q == 55, sig == 0.5, n == 80) %>% 
+  select(K, X_rmse, Y_rmse) %>% 
+  pivot_longer(-K) %>% 
+  ggplot(aes(x = as.factor(K), y = value, fill = name)) +
+  geom_boxplot() 
+```
+

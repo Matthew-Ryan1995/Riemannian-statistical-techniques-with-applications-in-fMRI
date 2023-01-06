@@ -1,0 +1,4 @@
+"0","tmp %>% "
+"0","  transmute(sig, sd_X = map_dbl(X, sd), sd_Y = map_dbl(Y, sd)) %>% "
+"0","  ggplot(aes(sig, sd_X)) +"
+"0","  geom_point()"

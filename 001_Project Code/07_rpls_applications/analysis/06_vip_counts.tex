@@ -1,0 +1,262 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={06\_VIP counts},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{06\_VIP counts}
+\author{}
+\date{\vspace{-2.5em}2022-12-02}
+
+\begin{document}
+\maketitle
+
+\hypertarget{cobre}{%
+\section{COBRE}\label{cobre}}
+
+\hypertarget{age}{%
+\subsubsection{Age}\label{age}}
+
+\begin{verbatim}
+## # A tibble: 3 x 3
+##   full_vip age       n
+##   <lgl>    <lgl> <int>
+## 1 FALSE    TRUE     19
+## 2 TRUE     FALSE    14
+## 3 TRUE     TRUE     31
+\end{verbatim}
+
+\hypertarget{group}{%
+\subsubsection{Group}\label{group}}
+
+\begin{verbatim}
+## # A tibble: 3 x 3
+##   full_vip groupPatient     n
+##   <lgl>    <lgl>        <int>
+## 1 FALSE    TRUE             5
+## 2 TRUE     FALSE           25
+## 3 TRUE     TRUE            20
+\end{verbatim}
+
+\hypertarget{total}{%
+\subsubsection{Total}\label{total}}
+
+\begin{verbatim}
+## # A tibble: 3 x 4
+##   pred        full_vip age   groupPatient
+##   <chr>       <lgl>    <lgl> <lgl>       
+## 1 L Par-R IPS TRUE     FALSE FALSE       
+## 2 R DMN-R STS TRUE     FALSE FALSE       
+## 3 Basal-L TPJ TRUE     FALSE FALSE
+\end{verbatim}
+
+\hypertarget{cross-ways}{%
+\subsubsection{Cross-ways}\label{cross-ways}}
+
+\begin{verbatim}
+## # A tibble: 7 x 4
+##   full_vip age   groupPatient     n
+##   <lgl>    <lgl> <lgl>        <int>
+## 1 FALSE    FALSE FALSE          711
+## 2 FALSE    FALSE TRUE             5
+## 3 FALSE    TRUE  FALSE           19
+## 4 TRUE     FALSE FALSE            3
+## 5 TRUE     FALSE TRUE            11
+## 6 TRUE     TRUE  FALSE           22
+## 7 TRUE     TRUE  TRUE             9
+\end{verbatim}
+
+\hypertarget{abide}{%
+\section{ABIDE}\label{abide}}
+
+\hypertarget{age-1}{%
+\subsubsection{Age}\label{age-1}}
+
+\begin{verbatim}
+## # A tibble: 3 x 3
+##   full_vip age       n
+##   <lgl>    <lgl> <int>
+## 1 FALSE    TRUE    193
+## 2 TRUE     FALSE   102
+## 3 TRUE     TRUE    106
+\end{verbatim}
+
+\hypertarget{group-1}{%
+\subsubsection{Group}\label{group-1}}
+
+\begin{verbatim}
+## # A tibble: 3 x 3
+##   full_vip groupAutism     n
+##   <lgl>    <lgl>       <int>
+## 1 FALSE    TRUE           24
+## 2 TRUE     FALSE         151
+## 3 TRUE     TRUE           57
+\end{verbatim}
+
+\hypertarget{sex}{%
+\subsubsection{Sex}\label{sex}}
+
+\begin{verbatim}
+## # A tibble: 3 x 3
+##   full_vip sexMale     n
+##   <lgl>    <lgl>   <int>
+## 1 FALSE    TRUE       17
+## 2 TRUE     FALSE     160
+## 3 TRUE     TRUE       48
+\end{verbatim}
+
+\hypertarget{eye}{%
+\subsubsection{Eye}\label{eye}}
+
+\begin{verbatim}
+## # A tibble: 3 x 3
+##   full_vip eyeClosed     n
+##   <lgl>    <lgl>     <int>
+## 1 FALSE    TRUE         50
+## 2 TRUE     FALSE       158
+## 3 TRUE     TRUE         50
+\end{verbatim}
+
+\hypertarget{crossways}{%
+\subsubsection{Crossways}\label{crossways}}
+
+\begin{verbatim}
+## # A tibble: 1 x 6
+##   pred                                    full_vip age   group~1 sexMale eyeCl~2
+##   <chr>                                   <lgl>    <lgl> <lgl>   <lgl>   <lgl>  
+## 1 Temporal_Pole_Sup_R-Temporal_Pole_Mid_R TRUE     TRUE  TRUE    TRUE    TRUE   
+## # ... with abbreviated variable names 1: groupAutism, 2: eyeClosed
+\end{verbatim}
+
+\hypertarget{total-1}{%
+\subsubsection{Total}\label{total-1}}
+
+\begin{verbatim}
+## 
+## Attaching package: 'kableExtra'
+\end{verbatim}
+
+\begin{verbatim}
+## The following object is masked from 'package:dplyr':
+## 
+##     group_rows
+\end{verbatim}
+
+\begin{table}
+\centering
+\begin{tabular}[t]{l}
+\hline
+pred\\
+\hline
+\cellcolor{gray!6}{Amygdala\_R-Paracentral\_Lobule\_R}\\
+\hline
+Calcarine\_L-Calcarine\_R\\
+\hline
+\cellcolor{gray!6}{Cerebelum\_10\_R-Vermis\_1\_2}\\
+\hline
+Cerebelum\_3\_R-Vermis\_9\\
+\hline
+\cellcolor{gray!6}{Cerebelum\_8\_L-Cerebelum\_9\_L}\\
+\hline
+Cerebelum\_9\_L-Cerebelum\_10\_L\\
+\hline
+\cellcolor{gray!6}{Cingulum\_Ant\_R-Occipital\_Inf\_R}\\
+\hline
+Cingulum\_Mid\_R-Pallidum\_L\\
+\hline
+\cellcolor{gray!6}{Frontal\_Sup\_Medial\_L-Frontal\_Med\_Orb\_L}\\
+\hline
+Hippocampus\_L-Lingual\_R\\
+\hline
+\cellcolor{gray!6}{Occipital\_Inf\_R-Precuneus\_L}\\
+\hline
+Olfactory\_R-Vermis\_9\\
+\hline
+\cellcolor{gray!6}{Parietal\_Sup\_L-Parietal\_Inf\_L}\\
+\hline
+Parietal\_Sup\_L-Temporal\_Sup\_R\\
+\hline
+\cellcolor{gray!6}{Rectus\_R-Occipital\_Inf\_R}\\
+\hline
+Supp\_Motor\_Area\_R-Angular\_L\\
+\hline
+\cellcolor{gray!6}{Supp\_Motor\_Area\_R-Calcarine\_R}\\
+\hline
+Supp\_Motor\_Area\_R-Cerebelum\_6\_L\\
+\hline
+\end{tabular}
+\end{table}
+
+\end{document}

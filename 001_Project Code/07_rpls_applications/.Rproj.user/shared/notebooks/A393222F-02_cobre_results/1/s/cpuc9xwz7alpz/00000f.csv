@@ -1,0 +1,3 @@
+"0","M <- riemannian_pls(X = X, Y = Y, L = 3, tol = 1e-4, max.iter = 20,"
+"0","                    type_x = ""affine"", type_y = ""euclidean"", method = ""tangent"","
+"0","                    scale = TRUE)"

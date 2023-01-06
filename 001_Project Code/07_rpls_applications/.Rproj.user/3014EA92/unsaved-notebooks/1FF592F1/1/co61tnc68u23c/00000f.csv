@@ -1,0 +1,4 @@
+"0","O <- (Y - mean(Y)) %*% t(Y - mean(Y))"
+"0","o <- diag(O)"
+"0","ones <- rep(1, n)"
+"0","D2 <- ones %*% t(o) + o %*%t(ones) - 2*O"

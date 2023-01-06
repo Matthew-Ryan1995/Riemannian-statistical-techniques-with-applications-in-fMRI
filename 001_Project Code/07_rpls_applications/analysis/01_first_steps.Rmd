@@ -1,0 +1,238 @@
+---
+title: "Untitled"
+output: html_document
+date: "2022-10-13"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(tidyverse, phdWork, rsample)
+```
+
+```{r}
+df <- cobre %>% 
+  select(group, age, cors) %>% 
+  mutate(cors = map(cors, ~.x[1:4, 1:4]))
+```
+
+```{r}
+set.seed(1234)
+cv_folds <- vfold_cv(df, strata = group)
+```
+
+```{r}
+tmp <- vfold_cv(df, strata = group, repeats = 2)
+```
+
+```{r}
+tmp %>% 
+  filter(id2 == "Fold01") %>% 
+  slice(1) %>% 
+  pull(splits) %>% 
+  .[[1]] %>% 
+  assessment()
+```
+
+```{r}
+tmp %>% 
+  filter(id2 == "Fold01") %>% 
+  slice(2) %>% 
+  pull(splits) %>% 
+  .[[1]] %>% 
+  assessment()
+```
+
+
+```{r}
+get_model_metrics <- function(M, test_data, L){
+  
+  X_test <- test_data$cors
+  Y_test <- model.matrix(~ age + group, data = test_data) %>% 
+    as.matrix() %>% 
+    .[, -1]
+  
+  if(isTRUE(M$type_y == "euclidean")){
+    Y_test <- t(t(Y_test) - M$muY) 
+  }else{
+    Y_test <- linearise_data(Y_test, M$muY)
+  }
+  
+  preds <- predict.riemannian_pls(object = M, newdata = X_test, tol = 1e-4, max.iter = 20,
+                                  num_comp = L, method = "tangent")
+  
+  r2 <- rsq.riemannian_pls(truth = Y_test, est = preds, muY = M$muY, m = M$muY,
+                           type_y = "euclidean")
+  rmse <- rmse.riemannian_pls(truth = Y_test, est = preds,
+                              type_y = "euclidean")
+  
+  res <- 
+    tibble(
+      K = L,
+      r2 = r2,
+      rmse = rmse
+    )
+  
+  return(res)
+}
+fit_and_test_single_fold <- function(cv_fold, formula = ~ 1){
+  
+  fold <- cv_fold$splits[[1]]
+  id <- cv_fold$id
+  
+  train_data <- analysis(fold)
+  test_data <- assessment(fold)
+  
+  K <- min(nrow(train_data) - 1, 
+           choose(nrow(train_data$cors[[1]]) + 1, 2))
+  
+  X <- train_data$cors
+  Y <- model.matrix(formula, data = train_data) %>% 
+    as.matrix() %>% 
+    .[, -1]
+  
+  M <- riemannian_pls(X = X, Y = Y, L = K, tol = 1e-4, max.iter = 20, 
+                      type_x = "affine", type_y = "euclidean", method = "tangent")
+  L <- 1:K
+  
+  fold_fit <- map_dfr(L,
+                      function(l){
+                        get_model_metrics(M = M, test_data = test_data, L = l)
+                      })
+  fold_fit <- fold_fit %>% 
+    mutate(id = id) %>% 
+    select(id, everything())
+  
+  return(fold_fit)
+}
+cv_rpls_fit <- function(full_folds, formula = ~ 1){
+  V <- nrow(full_folds)
+  res <- map_dfr(1:V, function(v){
+    folds <- slice(full_folds, v)
+    fit_and_test_single_fold(folds, formula = formula)
+  }
+  )
+  
+  return(res)
+}
+```
+
+
+```{r}
+slice(cv_folds, 1)$splits
+```
+
+
+
+
+
+```{r}
+tmp <- cv_rpls_fit(cv_folds, formula = ~age + group, mc.cores = 4)
+```
+
+```{r}
+tmp %>% 
+  group_by(K) %>% 
+  summarise(across(c(r2, rmse), mean))
+```
+
+```{r}
+tmp %>% 
+  mutate(K = as.factor(K)) %>% 
+  pivot_longer(-c(id, K)) %>% 
+  ggplot(aes(x = K, y = value, fill = name)) +
+  geom_boxplot() +
+  facet_wrap(~name, scales = "free_y")
+```
+
+```{r}
+X <- df$cors
+Y <- model.matrix(~ age + group, data = df) %>% 
+    as.matrix() %>% 
+    .[, -1]
+  
+final_model <- riemannian_pls(X = X, Y = Y, L = 1, tol = 1e-4, max.iter = 20, 
+                      type_x = "affine", type_y = "euclidean", method = "tangent", scale = T)
+
+```
+
+```{r}
+unvec(P = final_model$muX, vec = final_model$loadingsX[[1]]) %>% 
+  corrplot::corrplot(is.corr = FALSE, type = "lower")
+```
+
+```{r}
+df %>% 
+  mutate(ears = map_dbl(cors, ~.x[3, 4])) %>% 
+  ggplot(aes(x = age, y = ears, colour = group)) +
+  geom_point() +
+  geom_smooth(method = lm)
+```
+
+
+```{r}
+final_model$loadingsY[[1]]
+final_model$reg_steps[[1]]$M %>% summary()
+```
+
+
+
+
+
+```{r}
+get_model_metrics(tmp, assessment(cv_folds$splits[[1]]), 1)
+```
+
+```{r}
+tmp2 <- get_model_metrics(tmp, assessment(cv_folds$splits[[1]]), 1)
+Y_test <- model.matrix(~ age + group, data = assessment(cv_folds$splits[[1]])) %>% 
+  as.matrix() %>% 
+  .[, -1]
+Y_test <- t(t(Y_test) - tmp$muY) 
+```
+
+```{r}
+rsq.riemannian_pls(truth = Y_test, est = tmp2, m = tmp$muY, type_y = "euclidean")
+```
+
+
+
+```{r}
+sqrt(mean(rowSums((tmp2 - Y_test)^2)))
+```
+
+```{r}
+sum(rowSums((tmp2 - Y_test)^2))/sum((t(tmp2) - tmp$muY)^2)
+```
+
+```{r}
+sum((tmp2 - Y_test)^2)
+```
+
+
+```{r}
+sum((tmp2 - matrix(tmp$muY, nrow = nrow(tmp2), ncol = ncol(tmp2), byrow = TRUE))^2)
+```
+
+
+
+
+
+
+
+```{r}
+train_data <- analysis(cv_folds$splits[[1]])
+K <- min(nrow(train_data) - 1, choose(5, 2))
+
+X <- train_data$cors
+Y <- model.matrix(~ age + group, data = train_data) %>% 
+  as.matrix() %>% 
+  .[, -1]
+
+M <- riemannian_pls(X = X, Y = Y, L = K, tol = 1e-4, max.iter = 20, 
+                    type_x = "affine", type_y = "euclidean", method = "tangent")
+
+```
+
+
+
+

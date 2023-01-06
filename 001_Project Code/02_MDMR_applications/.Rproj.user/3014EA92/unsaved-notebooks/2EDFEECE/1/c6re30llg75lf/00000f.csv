@@ -1,0 +1,8 @@
+"0","X <- model.matrix(~age + group + sex + eye, data = df)"
+"0","H <- X %*% solve(t(X) %*% X) %*% t(X)"
+"0","I <- diag(1, nrow(X))"
+"0","R <- I - H"
+"0","G_resid <- R %*% as.matrix(D_geo)%*% R"
+"0","G_resid <- as.dist(G_resid)"
+"0","G_fit <- H %*% as.matrix(D_geo)%*% H"
+"0","G_fit <- as.dist(G_fit)"

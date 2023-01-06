@@ -1,0 +1,9 @@
+pacman::p_load(tidyverse, phdWork)
+
+source("code/gen_data_and_fit_model.R")
+
+tmp <- generate_rpls_data(n = 30, x_dim = 3, y_dim = 3, sig = 0)
+
+test <- riemannian_pls(X = tmp$X, Y = tmp$Y, L = 5)
+
+saveRDS(test, "test.Rds")

@@ -1,0 +1,3 @@
+"0","tmp %>% "
+"0","  group_by(K) %>% "
+"0","  summarise(across(c(r2, rmse), mean))"

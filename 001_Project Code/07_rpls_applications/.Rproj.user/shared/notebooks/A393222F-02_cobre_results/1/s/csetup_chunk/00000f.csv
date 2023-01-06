@@ -1,0 +1,2 @@
+"0","knitr::opts_chunk$set(echo = FALSE, fig.asp = 1, fig.pos = ""center"")"
+"0","pacman::p_load(tidyverse, phdWork)"

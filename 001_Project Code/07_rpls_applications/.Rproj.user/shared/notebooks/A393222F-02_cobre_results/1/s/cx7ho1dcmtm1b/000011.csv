@@ -1,0 +1,6 @@
+"0","P.hat <- do.call(cbind, M$loadingsX)"
+"0","W.hat <- do.call(cbind, M$weightsX)"
+"0","C.hat <- do.call(cbind, M$weightsY)"
+"0","B.hat <- map_dbl(M$reg_steps, ~.x$b1) %>% "
+"0","  diag()"
+"0","B <- W.hat %*% solve(t(P.hat) %*% W.hat) %*% B.hat %*% t(C.hat)"

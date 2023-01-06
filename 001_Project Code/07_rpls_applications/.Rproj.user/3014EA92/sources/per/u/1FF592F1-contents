@@ -1,0 +1,131 @@
+---
+title: "Untitled"
+output: html_document
+date: "2022-12-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+n1 <- 5
+n2 <- 3
+X <- cbind(rep(1, n = n1 + n2), c(rep(0, n1), rep(1, n2)))
+```
+
+```{r}
+solve(t(X) %*% X)
+```
+
+```{r}
+n2/(n1 * n2)
+(n1 + n2)/(n2 * n1)
+```
+
+```{r}
+H <- X %*% solve(t(X) %*% X) %*%t(X)
+```
+
+```{r}
+ones <- rep(1, n1 + n2)
+I <- diag(n1 + n2)
+J <- I - ones %*% t(ones)/(n1+n2)
+```
+
+
+
+```{r}
+p <- 5
+n <- n1 + n2
+Y <- matrix(rnorm(p * n), ncol = p)
+# Y <- scale(Y)
+D <- dist(Y)
+D.mat <- as.matrix(D)
+G <- MDMR::gower(D)
+```
+
+```{r}
+O <- (Y - ones %*% t(colMeans(Y))) %*% t((Y - ones %*% t(colMeans(Y))))
+colMeans(O)
+rowMeans(O)
+mean(O)
+```
+
+
+```{r}
+A <- -D.mat^2/2
+```
+
+
+```{r}
+G[1,3]
+```
+
+```{r}
+(Y[1] - mean(Y)) * (Y[3] - mean(Y))
+```
+
+
+```{r}
+O <- (Y - mean(Y)) %*% t(Y - mean(Y))
+o <- diag(O)
+ones <- rep(1, n)
+D2 <- ones %*% t(o) + o %*%t(ones) - 2*O
+```
+
+```{r}
+D2
+```
+
+```{r}
+D.mat^2
+```
+
+
+```{r}
+sum(diag(H %*% G))
+```
+
+```{r}
+sum(G[1:n1, 1:n1])/n1 + sum(G[(n1+1):n, (n1+1):n])/n2
+```
+
+```{r}
+sum(G[1:n1, 1:n1])
+```
+
+
+
+```{r}
+-2 * (sum(D.mat[1:n1, 1:n1]^2) - n1^2 * mean(D.mat^2))
+```
+
+```{r}
+J %*% H %*% J
+```
+
+```{r}
+-2 * sum(diag(H %*% G))
+```
+
+```{r}
+n2/(n1*n) * sum(D.mat[1:n1, 1:n1]^2) + n1/(n2*n) * sum(D.mat[(n1+1):n, (n1+1):n]^2) - 2/(n) *sum(D.mat[1:n1, (n1+1):n]^2)
+```
+
+```{r}
+n2*n1/(n) * mean(D.mat[1:n1, 1:n1]^2) + n1*n2/(n) * mean(D.mat[(n1+1):n, (n1+1):n]^2) - 2/(n) *sum(D.mat[1:n1, (n1+1):n]^2)
+```
+
+```{r}
+(n1*n2)/n * ((mean(D.mat[1:n1, 1:n1]) - mean(D.mat))^2 + (mean(D.mat[(n1+1):n, (n1+1):n]) - mean(D.mat))^2)
+```
+
+
+
+
+
+
+
+
+

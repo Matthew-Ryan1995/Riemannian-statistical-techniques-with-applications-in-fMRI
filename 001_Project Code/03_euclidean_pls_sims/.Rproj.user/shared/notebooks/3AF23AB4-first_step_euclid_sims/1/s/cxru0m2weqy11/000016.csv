@@ -1,0 +1,8 @@
+"0","tmp3 %>% "
+"0","  mutate(sim = as.factor(sim),"
+"0","         sig = as.factor(sig)) %>% "
+"0","  select(K, n, X_r2, Y_r2, sim, sig) %>% "
+"0","  pivot_longer(c(X_r2, Y_r2)) %>% "
+"0","  ggplot(aes(x = K, y = value, colour = sim, shape = sig)) +"
+"0","  geom_point() +"
+"0","  facet_grid(name~n)"

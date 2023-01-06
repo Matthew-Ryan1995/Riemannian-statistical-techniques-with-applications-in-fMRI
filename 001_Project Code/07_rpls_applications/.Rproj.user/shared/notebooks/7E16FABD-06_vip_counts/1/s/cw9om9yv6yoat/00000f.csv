@@ -1,0 +1,7 @@
+"0","fl <- list.files(here::here(""results/abide_vip/""), full.names = T)"
+"0","sig_abide <- map(fl, read_rds)"
+"0","sig_abide <- do.call(rbind, sig_abide)"
+"0","sig_abide <- sig_abide/200"
+"0","sig_abide[1:116, ] <- 1"
+"0","sig_abide <- sig_abide %>%"
+"0","  apply(2, p.adjust, method = ""fdr"")"

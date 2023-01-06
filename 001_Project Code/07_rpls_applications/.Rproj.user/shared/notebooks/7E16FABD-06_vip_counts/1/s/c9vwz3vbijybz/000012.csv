@@ -1,0 +1,3 @@
+"0","sig_cobre %>% "
+"0","  count(full_vip, groupPatient) %>% "
+"0","  filter(full_vip | groupPatient)"

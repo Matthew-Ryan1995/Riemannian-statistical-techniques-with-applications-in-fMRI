@@ -1,0 +1,24 @@
+\documentclass[border=3mm,tikz,preview]{standalone}
+\usetikzlibrary{intersections}
+\usepackage{amsmath}
+\usetikzlibrary{shapes.misc}
+
+\tikzset{cross/.style={cross out, draw=black, minimum size=2*(#1-\pgflinewidth), inner sep=0pt, outer sep=0pt},
+	%default radius will be 1pt. 
+	cross/.default={2pt}}
+
+\begin{document}
+\begin{tikzpicture}
+
+
+%% FC nodes
+	\draw[black] (3,0) node{$\boldsymbol{F}_2$};
+	\draw[black] (0,3) node{$\boldsymbol{F}_3$};
+	\draw[black] (3,3) node{$\boldsymbol{F}_4$};
+	\draw[black] (0,0) node{$\boldsymbol{F}_5$};
+	
+	\filldraw[blue] (1, 2) circle (2pt) node (F1) {};
+	\fill (1, 2.2) node[cross,rotate=5, pink] {};
+
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,2 @@
+"0","cv_res_euc <- read_rds(""../results/cobre_cv_results_euclidean.Rds"")"
+"0","cv_res_fish <- read_rds(""../results/cobre_cv_results_fisher.Rds"")"

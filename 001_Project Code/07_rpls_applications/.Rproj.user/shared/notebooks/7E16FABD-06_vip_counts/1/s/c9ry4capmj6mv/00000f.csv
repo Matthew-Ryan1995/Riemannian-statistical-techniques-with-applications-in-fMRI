@@ -1,0 +1,6 @@
+"0","fl <- list.files(here::here(""results/cobre_vip/""), full.names = T)"
+"0","sig_cobre <- map(fl, read_rds)"
+"0","sig_cobre <- (Reduce(""+"", sig_cobre)/200)"
+"0","sig_cobre[1:39, ] <- 1"
+"0","sig_cobre <- sig_cobre %>%"
+"0","  apply(2, p.adjust, method = ""fdr"")"

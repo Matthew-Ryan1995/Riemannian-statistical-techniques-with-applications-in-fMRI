@@ -1,0 +1,75 @@
+---
+title: "Tolerance investigation"
+author: "Matt Ryan"
+date: \today
+output: 
+  html_document:
+    toc: yes
+    toc_float: yes
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+pacman::p_load(tidyverse, phdWork)
+```
+
+# The process
+
+I simulated data from the R-PLS model for SPD response and predictor. I simulated
+
+1. $n = 80$ subjects,
+2. $\sigma = 0.5$ noise,
+3. $p = q = 10$, i.e. $10\times 10$ matrices.
+
+These are the median values from my simulation study to recover the RPLS model.  We simulated with $L = 5$ true latent variables in the model, and tested recovery when extracting $K = 5$ latent variables from the model.
+
+The purpose of this simulation was to investigate the effects of tolerance and maximum iterations on the model recovery of the RPLS model.  I did a fully factorial investigation looking at
+
+1. $tol \in \{ 10^{-4}, 10^{-5}, 10^{-6}, 10^{-7}, 10^{-8} \}$, and
+2. $max.iter \in \{10, 20, 30, 40, 50\}$.
+
+This resulted in $25$ simulation conditions.  For each condition, I performed $100$ simulations and saved the measures of model recovery I am considering, i.e.
+
+1. $P$ and $Q$ $R^2$ value,
+2. $X$ and $Y$ $R^2$ value,
+3. $X$ and $Y$ $RMSE$ value.
+
+The longest simulation condition ($tol = 10^{-8}$, $max.iter = 50$) tool approximately $154$ hours to complete $100$ simulations.
+
+# Results
+
+```{r}
+f <- list.files(here::here("results/tolerance"), recursive = T, full.names = T)
+```
+
+```{r}
+df <- map_dfr(f[!str_detect(f, "presim")], read_rds)
+```
+
+```{r}
+df %>% 
+  pivot_longer(c(contains("r2"), contains("rmse")), names_to = "statistic") %>% 
+  mutate(statistic = factor(statistic, 
+                            c("P_r2", "Q_r2", "X_r2", "Y_r2", "X_rmse", "Y_rmse")),
+         tol = as.factor(tol),
+         tol = fct_rev(tol),
+         max.iter = as.factor(max.iter)) %>% 
+  ggplot(aes(x = tol, y = value, fill = max.iter)) +
+  geom_boxplot() +
+  facet_wrap(~statistic, scales = "free_y") +
+  theme_classic() +
+  labs(x = "Tolerance", y = NULL, fill = "Maximum iteration") +
+  theme(legend.position = "bottom",
+        text = element_text(size = 16))
+ggsave("fig/tolerance_sim_boxplot.png", height = 14, width = 21)
+```
+
+> For each tolerance level and iteration value, we present boxplots of the results from the simulations.  Each plot represents a different model recovery statistic.  The x-axis is the tolerance level.  The colours represent the maximum number of iterations.  We see that tolerance has little effect on model recovery, but number of iterations does.
+
+
+# Conclusion
+
+Tolerance level does not have much of an effect on model recovery.  This is likely because our model estimation is not meeting tolerance in its convergence, rather is meeting the maximum number of iterations instead.  We find that at least $20$ maximum iterations is sufficient for consistent recovery since increasing iterations to more than this has little effect on recovery.
+
+> We will run our simulations wiht $tol = 10^{-4}$ and $max.iter = 20$.

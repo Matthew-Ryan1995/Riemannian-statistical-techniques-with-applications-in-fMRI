@@ -1,0 +1,1 @@
+"0","tmp <- riemannian_pls(X = X, Y = Y, L = 2, type_x = ""euclidean"", type_y = ""euclidean"")"

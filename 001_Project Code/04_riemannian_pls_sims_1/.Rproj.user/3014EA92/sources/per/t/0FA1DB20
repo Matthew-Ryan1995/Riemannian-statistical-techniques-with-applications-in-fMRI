@@ -1,0 +1,27 @@
+{
+    "id": "0FA1DB20",
+    "path": "~/Desktop/PhD/PhD/001_Project Code/04_riemannian_pls_sims_1/code/create_tangent_n.R",
+    "project_path": "code/create_tangent_n.R",
+    "type": "r_source",
+    "hash": "509327653",
+    "contents": "",
+    "dirty": false,
+    "created": 1672903005400.0,
+    "source_on_save": false,
+    "relative_order": 3,
+    "properties": {
+        "tempName": "Untitled2",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "17,27",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1672960422,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1672960422778,
+    "read_only": false,
+    "read_only_alternatives": []
+}

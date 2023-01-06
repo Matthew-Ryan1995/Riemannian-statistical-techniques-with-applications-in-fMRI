@@ -1,0 +1,5 @@
+"0","tibble("
+"0","  truth = y[, 2],"
+"0","  est = preds[, 2]"
+"0",") %>% "
+"0","yardstick::rsq(truth = truth, estimate = est)"

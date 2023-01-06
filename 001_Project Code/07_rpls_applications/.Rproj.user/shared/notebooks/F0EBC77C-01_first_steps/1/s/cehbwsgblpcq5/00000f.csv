@@ -1,0 +1,5 @@
+"0","df %>% "
+"0","  mutate(ears = map_dbl(cors, ~.x[3, 4])) %>% "
+"0","  ggplot(aes(x = age, y = ears, colour = group)) +"
+"0","  geom_point() +"
+"0","  geom_smooth(method = lm)"

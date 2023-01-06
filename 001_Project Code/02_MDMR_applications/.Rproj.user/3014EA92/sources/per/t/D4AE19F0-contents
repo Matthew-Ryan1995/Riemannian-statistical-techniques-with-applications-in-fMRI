@@ -1,0 +1,68 @@
+---
+output: 
+  pdf_document:
+    keep_tex: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+pacman::p_load(tidyverse, kableExtra)
+```
+
+
+```{r}
+tab <- readRDS("results/abide_mdmr_results.Rds")
+```
+
+```{r abide_tab}
+tab %>% 
+  select(-numer_df) %>% 
+  mutate(across(where(is.numeric), round, 3),
+         permutation_p_value = ifelse(permutation_p_value == 0, 
+                                      "<0.001", 
+                                      as.character(permutation_p_value)),
+         predictor = case_when(predictor == "age" ~ "Age",
+                               predictor == "groupControl" ~ "Group",
+                               predictor == "sexMale" ~ "Sex",
+                               predictor == "eyeOpen" ~ "Eye Status",
+                               TRUE ~ "Overall")) %>% 
+  select(-method) %>% 
+  kbl(booktabs = T,
+      col.names = c("", "$\\tilde{F}$", "$\\tilde{R}^2$", "P-value"),
+      caption = "The results of MDMR on the ABIDE dataset using three different distance metrics and regularising the functional connectivity matrices with $\\lambda = 1$.  Each row represents a significant predictor at the 5\\% level; the sex predictor for the correlation metric was retained because it is borderline significant.  Geometric-MDMR was the only option to detect a group-based difference in this data.", 
+      position = "htbp") %>% 
+  kable_styling(latex_options = "striped") %>% 
+  pack_rows(index = c("Geometric" = 5, "Euclidean" = 3, "Correlation" = 4))
+```
+
+
+```{r}
+tab <- readRDS("results/abide_mdmr_results_compare.Rds")
+```
+
+```{r comparing_results_group}
+tab2 <- tab %>% 
+  select(-numer_df) %>% 
+  mutate(across(where(is.numeric), round, 3),
+         predictor = case_when(predictor == "age" ~ "Age",
+                               predictor == "groupControl" ~ "Group",
+                               predictor == "sexMale" ~ "Sex",
+                               predictor == "eyeOpen" ~ "Eye Status",
+                               TRUE ~ "Overall")) %>% 
+  filter(predictor == "Group") %>% 
+  select(-predictor) %>% 
+  pivot_longer(-method) %>% 
+  pivot_wider(names_from = method, values_from = value) %>% 
+  mutate(name = case_when(
+    name == "statistic" ~ "$\\tilde{F}$",
+    name == "pseudo_r2" ~ "$\\tilde{R}^2$",
+    TRUE ~ "\\textit{p}-value"
+  )) 
+tab2 %>% 
+  kbl(booktabs = T,
+      col.names = c("", colnames(tab2)[-1]),
+      caption = "The results of MDMR on the ABIDE dataset using three different distance metrics and regularising the functional connectivity matrices with $\\lambda = 1$.  Each row represents a significant predictor at the 5\\% level; the sex predictor for the correlation metric was retained because it is borderline significant.  Geometric-MDMR was the only option to detect a group-based difference in this data.", 
+      position = "htbp") %>% 
+  kable_styling(latex_options = "striped") 
+```
+

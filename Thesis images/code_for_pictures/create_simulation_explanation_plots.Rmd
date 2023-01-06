@@ -1,0 +1,277 @@
+---
+title: "Untitled"
+author: "Matthew Ryan"
+date: "07/01/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(tidyverse, phdWork, patchwork)
+```
+
+```{r}
+grad <- colorRampPalette(c("#67001F", "#B2182B", "#D6604D", 
+                           "#F4A582", "#FDDBC7", "#FFFFFF", "#D1E5F0", "#92C5DE", 
+                           "#4393C3", "#2166AC", "#053061"))(200)
+```
+
+
+```{r}
+A <- diag(1, 3)
+A[upper.tri(A)] <- A[lower.tri(A)] <- 0.9
+B <- diag(1, 2)
+B[1, 2] <- B[2, 1] <- -0.9
+```
+
+```{r}
+create_plot <- function(A, B, r = 0, legend = FALSE){
+  A <- implant_signal(A, B, rois = 1:2, r = r)
+  return(
+    A %>% 
+  as_tibble(rownames = "source") %>% 
+  pivot_longer(-source, names_to = "target") %>% 
+  mutate(across(c(target, source), fct_inorder),
+         target = fct_rev(target),
+         value = round(value, 3)) %>% 
+  ggplot(aes(x = source, y = target, label = value, colour = value)) +
+  geom_tile(fill = "white", colour= "black")+
+  geom_text(size = 10, show.legend = legend)+
+  theme_void() 
+  )
+}
+```
+
+```{r}
+implant_signal(A, B, rois = 1:2, chol = FALSE)
+```
+
+```{r}
+implant_signal(A[c(1, 3, 2), c(1, 3, 2)], B, chol = FALSE, rois = 1:2)[c(1, 3, 2), c(1, 3, 2)]
+```
+
+
+
+
+
+
+
+```{r}
+p1 <- create_plot(A, B)
+p2 <- create_plot(A, B, r = 0.25, legend = FALSE)
+p3 <- create_plot(A, B, r = 0.75, legend = FALSE)
+p4 <- create_plot(A, B, r = 1, legend = FALSE)
+```
+
+```{r}
+((p1 | p2) / (p3 | p4)) +
+  scale_colour_gradientn(colours = grad) 
+```
+
+```{r}
+(p1 + p2 + p3 + p4)+
+  scale_colour_gradientn(colours = grad) 
+```
+
+```{r}
+return_df <- function(A, B, r = 0){
+  A <- implant_signal(A, B, rois = 1:2, r = r)
+  return(
+    A %>% 
+  as_tibble(rownames = "source") %>% 
+  pivot_longer(-source, names_to = "target") %>% 
+  mutate(across(c(target, source), fct_inorder),
+         target = fct_rev(target),
+         value = round(value, 3),
+         r = r)
+  )
+}
+```
+
+```{r}
+p <- map_dfr(c(0, 0.25, 0.75, 1), return_df, A = A, B = B) %>% 
+  mutate(r = case_when(r == 0 ~ "A)",
+                       r == 0.25 ~ "B)",
+                       r == 0.75 ~ "C)",
+                       TRUE ~ "D)")) %>% 
+  ggplot(aes(x = source, y = target, label = value, colour = value)) +
+  geom_tile(fill = "white", colour= "black")+
+  geom_text(size = 8, show.legend = FALSE)+
+  scale_colour_gradientn(colours = grad) +
+  facet_wrap(~r) +
+  labs(colour = NULL) +
+  theme_void()+
+  theme(strip.text.x = element_text(hjust = 0.05, vjust = 1, size = 15))
+```
+
+```{r}
+ggsave("../implant_signal_matrices.png", plot = p)
+```
+
+
+
+
+```{r}
+tmp <- generate_signal_matrix(0.5, 4, method = "ar1")
+tmp2 <- generate_signal_matrix(-0.25, 3, method = "ar1")
+```
+
+```{r}
+tmp
+```
+
+```{r}
+implant_signal(tmp, tmp2, rois = 1:3, r = 0.5)
+```
+
+
+
+
+
+
+## Get data
+
+```{r}
+data(cobre)
+```
+
+## Get a sim subject
+
+```{r}
+set.seed(1995)
+s <- sample(1:nrow(cobre), 1)
+base_sim <- cobre$cors[[s]]
+```
+
+## Get a signal matrix
+
+```{r}
+set.seed(2022)
+signal_mat <- generate_signal_matrix(
+  rho = -0.55, block_size = 4, method = "ar1", vary = TRUE, se = 0.267
+)
+```
+
+## Implant it in the subject
+
+```{r}
+implanted_sim <- implant_signal(
+  A = base_sim, B = signal_mat, rois = 4:7, r = 1
+)
+```
+
+## Wishart simulation
+
+```{r}
+wish_sim <- rWishart(1,
+                     df = sample(dim(implanted_sim)[1]:150, 1),
+                     Sigma = implanted_sim)[,,1]
+cov_mat <- cov2cor(wish_sim)
+```
+
+## Make plots
+
+```{r}
+grad <- colorRampPalette(c("#67001F", "#B2182B", "#D6604D", 
+                           "#F4A582", "#FDDBC7", "#FFFFFF", "#D1E5F0", "#92C5DE", 
+                           "#4393C3", "#2166AC", "#053061"))(200)
+labels <- colnames(base_sim)
+colnames(implanted_sim) <- rownames(implanted_sim) <- labels
+```
+
+```{r}
+get_plot <- function(data, wishart = FALSE, sim = FALSE, a = 0.25, colour = "cyan"){
+  p <- data %>% 
+    as_tibble(rownames = "source") %>% 
+    pivot_longer(-source, names_to = "target") %>% 
+    mutate(across(c(target, source), fct_inorder),
+           target = fct_rev(target)) %>% 
+    ggplot(aes(x = source, y = target, colour = value)) +
+    geom_tile(fill = "white", colour = "black") +
+    geom_point() +
+    theme_minimal() +
+    labs(x = NULL, y = NULL, colour = NULL) +
+    theme(axis.text.x = element_text(angle = 90), 
+          panel.grid = element_blank(),
+          legend.position = "None") +
+    scale_x_discrete(labels = labels) +
+    scale_y_discrete(labels = labels[39:1])
+  
+  if(wishart){
+    p <- p +
+      scale_colour_gradientn(colours = grad, 
+                             # limits = c(-150, 150)
+      ) 
+  }else{
+    p <- p +
+      scale_colour_gradientn(colours = grad, 
+                             # limits = c(-1 - 1e-10, 1 + 1e-10)
+      )
+  }
+  
+  if(sim){
+    p <- p +  
+      geom_vline(xintercept = "L DMN", size = 4, alpha = a, colour = colour) + 
+      geom_vline(xintercept = "Med DMN", size = 4, alpha = a, colour = colour) + 
+      geom_vline(xintercept = "Front DMN", size = 4, alpha = a, colour = colour) + 
+      geom_vline(xintercept = "R DMN", size = 4, alpha = a, colour = colour) + 
+      geom_hline(yintercept = "L DMN", size = 4, alpha = a, colour = colour) + 
+      geom_hline(yintercept = "Med DMN", size = 4, alpha = a, colour = colour) + 
+      geom_hline(yintercept = "Front DMN", size = 4, alpha = a, colour = colour) + 
+      geom_hline(yintercept = "R DMN", size = 4, alpha = a, colour = colour) 
+  }
+  
+  return(p)
+}
+```
+
+```{r}
+p1 <- get_plot(base_sim)
+```
+
+```{r}
+p2 <- get_plot(implanted_sim, sim = TRUE, colour = "grey50")
+p2
+```
+
+```{r}
+p3 <- get_plot(wish_sim, wishart = TRUE)
+```
+
+```{r}
+p4 <- get_plot(cov_mat)
+```
+
+
+```{r}
+(p1 | p2 ) / (p3 | p4) + plot_annotation(tag_levels = "A", tag_suffix = ")")
+(p1 / p2 )  + plot_annotation(tag_levels = "A", tag_suffix = ")")
+```
+
+```{r}
+ggsave("../simulation_explanation.png", height = 10, width = 7)
+```
+
+
+
+
+```{r}
+base_sim %>% 
+  as_tibble(rownames = "source") %>% 
+  pivot_longer(-source, names_to = "target") %>% 
+  mutate(across(c(target, source), fct_inorder),
+         target = fct_rev(target)) %>% 
+  ggplot(aes(x = source, y = target, colour = value)) +
+  geom_tile(fill = "white", colour = "black") +
+  geom_point() +
+  theme_minimal() +
+  labs(x = NULL, y = NULL, colour = NULL) +
+  theme(axis.text.x = element_text(angle = 90), 
+        panel.grid = element_blank(),
+        legend.position = "None") +
+  scale_x_discrete(labels = labels) +
+  scale_y_discrete(labels = labels[39:1]) +
+  scale_colour_gradientn(colours = grad) 
+```
+
+L DMN Med DMN	 Front DMN R DMN

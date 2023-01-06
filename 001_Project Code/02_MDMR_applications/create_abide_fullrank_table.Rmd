@@ -1,0 +1,38 @@
+---
+output: 
+  pdf_document:
+    keep_tex: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+pacman::p_load(tidyverse, kableExtra)
+```
+
+
+```{r}
+tab <- readRDS("results/abide_full_rank_mdmr_results.Rds")
+```
+
+```{r abide_fullrank_tab}
+tab %>% 
+  select(-numer_df) %>% 
+  mutate(across(where(is.numeric), round, 3),
+         permutation_p_value = ifelse(permutation_p_value == 0, 
+                                      "<0.001", 
+                                      as.character(permutation_p_value)),
+         predictor = case_when(predictor == "age" ~ "Age",
+                               predictor == "groupControl" ~ "Group",
+                               predictor == "sexMale" ~ "Sex",
+                               predictor == "eyeOpen" ~ "Eye Status",
+                               TRUE ~ "Overall")) %>% 
+  select(-method) %>% 
+  kbl(booktabs = T,
+      col.names = c("", "$\\tilde{F}$", "$\\tilde{R}^2$", "P-value"),
+      caption = "The results of MDMR on the ABIDE dataset using three different distance metrics and only the subjects with full rank functional connectivity matrices.  Each row represents a significant predictor at the 5\\% level; group for the geometric metric and eye status for the Euclidean metric were retained because they are borderline significant.  Geometric-MDMR shows a borderline significant difference in subject group.", 
+      position = "htbp") %>% 
+  kable_styling(latex_options = "striped") %>% 
+  pack_rows(index = c("Geometric" = 3, "Euclidean" = 3, "Correlation" = 4))
+```
+
+

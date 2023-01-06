@@ -1,0 +1,469 @@
+---
+title: "Template Title"
+author: "Matt Ryan"
+date: \today
+output: 
+  html_document:
+    toc: yes
+    toc_float: yes
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+pacman::p_load(tidyverse, phdWork)
+```
+
+```{r}
+#' calculate_subspace_distance
+#'
+#' @param U - Vectors spanning a subspace
+#' @param V - Vectors spanning a subspace
+#' @param K - Dimension of smaller subspace
+#' @param L - Dimension of true space
+#'
+#' @return
+#' @export
+#'
+#' @examples
+calculate_subspace_distance <- function(U, V, K, L = 5){
+  
+  # Get orthonormal bases
+  Uhat <- qr.Q(qr(U))
+  Vhat <- qr.Q(qr(V))
+  
+  # Calculate angles between
+  uv_svd <- svd(crossprod(Uhat, Vhat))
+  uv_svd$d[uv_svd$d > 1 - 1e-8] <- 1 # Working at tolerance
+  
+  # Geo distance of the grassmannian
+  dist <- sqrt(sum(acos(uv_svd$d)^2) + max(L - K, 0) * pi^2/4)
+  
+  return(dist)
+}
+
+#' R2 for subspaces
+#'
+#' @param U - Vectors spanning a subspace
+#' @param V - Vectors spanning a subspace
+#' @param K - Dimension of smaller subspace
+#' @param L - Dimension of true space
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' NA
+calculate_subspace_r2 <- function(U, V, K, L = 5){
+  max_dist <- L * pi^2/4 # Largest possible distance we can see
+  
+  square_dist <- calculate_subspace_distance(U, V, K, L)^2 # Get distance between subspaces
+  
+  r2 <- 1 - square_dist/max_dist # R2 value
+  
+  return(r2)
+}
+
+```
+
+
+
+```{r}
+sig <- 1
+set.seed(1995)
+n <- 20
+p <- 10
+p_vec_dim <- choose(p + 1, 2)
+L <- 5
+q <- 3
+# Fixed P and Q across simulation parameters p, q and L
+P <- matrix(rnorm(L*p_vec_dim), nrow = p_vec_dim, ncol = L)
+Q <- matrix(rnorm(L*q), nrow = q, ncol = L)
+
+
+# Make P and Q orthogonal
+if(p_vec_dim < L){
+  P <- t(svd(P)$v)
+}else{
+  P <- svd(P)$u
+}
+if(q < L){
+  Q <- t(svd(Q)$v)
+}else{
+  Q <- svd(Q)$u
+}
+
+
+## Create the scores
+Tmat <- matrix(rnorm(n * L), nrow = n)
+Tmat <- apply(Tmat, 2, scale, scale = FALSE)
+
+muX <- diag(1, p)
+```
+
+
+```{r}
+tmp <- map(1:ncol(P), function(i){
+  p_vec <- P[, i]
+  unvec(muX, vec = p_vec)
+})
+```
+
+```{r}
+M <- diag(0, L)
+for(i in 1:L){
+  for(j in 1:L){
+    M[i, j] <- affine_inner_product(muX, tmp[[i]], tmp[[j]])
+  }
+}
+M
+```
+
+```{r}
+X <- map(1:n,
+         function(n){
+           t_l <- Tmat[n, ]
+           
+           p_l <- map2(tmp, t_l, ~.x * .y)
+           p_l <- Reduce("+", p_l)
+           
+           E <- matrix(rnorm(p^2, sd = sig), ncol = p)
+           E <- (E + t(E))/2
+           
+           return(
+             affine_exp(muX, p_l + E)
+           )
+         })
+
+Y <- Tmat %*% t(Q) + matrix(rnorm(q * n, sd = sig), ncol = q)
+Y <- apply(Y, 2, scale, scale = FALSE)
+```
+
+
+```{r}
+mod1 <- riemannian_pls(X = X, Y = Y, type_y = "euclidean", 
+                       max.iter = 10, tol = 1e-4, L = 3, verbose = FALSE)
+```
+
+```{r}
+tmp[[1]]
+```
+
+
+```{r}
+mod1$loadingsX[[1]]
+```
+
+```{r}
+cancor(tmp[[1]], mod1$loadingsX[[1]], xcenter = FALSE, ycenter = FALSE)
+```
+
+```{r}
+cancor(vec(muX, tmp[[1]]), vec(muX, mod1$loadingsX[[1]]), xcenter = FALSE, ycenter = FALSE)
+```
+
+
+
+```{r}
+full_vec <- function(l){
+  t1 <- map(l, vec, P = mod1$muX)
+  return(do.call(cbind,t1))
+}
+```
+
+```{r}
+full_vec(mod1$loadingsX)
+P
+```
+
+
+
+```{r}
+cancor(P, full_vec(mod1$loadingsX), xcenter = FALSE, ycenter = FALSE)
+```
+
+
+```{r}
+cancor(Q, do.call(cbind, mod1$weightsY),  xcenter = FALSE, ycenter = FALSE)
+```
+
+```{r}
+sqrt(sum((fitted.riemannian_pls(mod1) - Y)^2)/n)
+```
+
+```{r}
+test_df <-tibble(x = NULL, y = NULL)
+write_rds(test_df, "test.Rds")
+```
+
+
+```{r}
+k <- 1:10
+walk(k,
+     function(i){
+       new_df <- tibble(x = i, y = i)
+       tmp <- read_rds("test.Rds")
+       write_rds(tmp, glue::glue("test_to_{i}.Rds"))
+       haha <- parallel::mclapply(k, function(j){
+         X <- matrix(rnorm(100), 10, 10)
+         X %*% X
+       }, mc.cores = parallel::detectCores())
+       tmp <- bind_rows(tmp, new_df)
+       write_rds(tmp, "test.Rds")
+     })
+```
+
+
+```{r}
+map(k, ~read_rds(glue::glue("test_to_{.x}.Rds")))
+```
+
+```{r}
+generate_rpls_data <- function(n, x_dim, y_dim, sig, seed = NULL, L = 5, 
+                               muX = diag(1, x_dim), muY = diag(1, y_dim),
+                               type_x = "affine", type_y = "affine"){
+  
+  if(type_x == "affine"){
+    p <- choose(x_dim + 1, 2)
+  }else{
+    p <- x_dim
+  }
+  if(type_y == "affine"){
+    q <- choose(y_dim + 1, 2)
+  }else{
+    q <- y_dim
+  }
+  
+  ## Fix a seed to generate the loading matrices
+  set.seed(2022^2)
+  # Fixed P and Q across simulation parameters p, q and L
+  P <- matrix(rnorm(L*p), nrow = p, ncol = L)
+  Q <- matrix(rnorm(L*q), nrow = q, ncol = L)
+  # Make P and Q orthogonal
+  if(p < L){
+    P <- t(svd(P)$v)
+  }else{
+    P <- svd(P)$u
+  }
+  if(q < L){
+    Q <- t(svd(Q)$v)
+  }else{
+    Q <- svd(Q)$u
+  }
+  
+  ## Change the seed for the data generation 
+  if(!is.null(seed)){
+    set.seed(seed)
+  }
+  
+  ## Create the scores
+  Tmat <- matrix(rnorm(n * L), nrow = n)
+  ## Scale the scores about 0
+  Tmat <- apply(Tmat, 2, scale, scale = FALSE)
+  
+  if(type_x == "affine"){
+    P_mat <- map(1:L,
+                 function(l){
+                   p_vec <- P[, l]
+                   unvec(muX, vec = p_vec)
+                 })
+    
+    X <- map(1:n,
+             function(i){
+               t_l <- Tmat[i, ] # Scores for subject
+               
+               p_l <- map2(P_mat, t_l, ~.x * .y) # Multiply scores by loading and add
+               p_l <- Reduce("+", p_l)
+               
+               # Make symmetric noise matrix
+               E <- matrix(rnorm(x_dim^2, sd = sig), ncol = x_dim)
+               E <- (E + t(E))/2
+               
+               return(
+                 affine_exp(muX, p_l + E) # Push down to manifold
+               )
+             })
+  }else{
+    E <-  matrix(rnorm(p * n, sd = sig), ncol = p)
+    X <- Tmat %*% t(P) + E
+    # Scale data
+    X <- apply(X, 2, scale, scale = FALSE)
+  }
+  
+  if(type_y == "affine"){
+    Q_mat <- map(1:L,
+                 function(l){
+                   q_vec <- Q[, l]
+                   unvec(muY, vec = q_vec)
+                 })
+    
+    Y <- map(1:n,
+             function(i){
+               t_l <- Tmat[i, ] # Scores for subject, assuming B = I
+               
+               p_l <- map2(Q_mat, t_l, ~.x * .y) # Multiply scores by loading and add
+               p_l <- Reduce("+", p_l)
+               
+               # Make symmetric noise matrix
+               E <- matrix(rnorm(y_dim^2, sd = sig), ncol = y_dim)
+               E <- (E + t(E))/2
+               
+               return(
+                 affine_exp(muY, p_l + E) # Push down to manifold
+               )
+             })
+  }else{
+    E <-  matrix(rnorm(q * n, sd = sig), ncol = q)
+    Y <- Tmat %*% t(Q) + E
+    # Scale data
+    Y <- apply(Y, 2, scale, scale = FALSE)
+  }
+  
+  
+  res <- list(
+    X = X,
+    Y = Y,
+    trueP = P,
+    trueQ = Q,
+    type_x = type_x,
+    type_y = type_y
+  )
+  
+  return(res)
+}
+```
+
+```{r}
+fit_riemannian_pls <- function(data, K = 1, tol = 1e-4, max.iter = 10){
+  model <- suppressWarnings(riemannian_pls(X = data$X, Y = data$Y, L = K, 
+                                           tol = tol, max.iter = max.iter, 
+                                           type_x = data$type_x, type_y = data$type_y))
+  
+  return(model)
+}
+```
+
+```{r}
+tmp <- generate_rpls_data(10, 4, 4, 0, seed = 2)
+M1 <- fit_riemannian_pls(tmp, K = 2)
+```
+
+
+```{r}
+collect_X <- function(model){
+  T.hat <- do.call(cbind, model$scoresX)
+  if(model$type_x == "affine"){
+    P.hat <- model$loadingsX
+    X.hat <- map(1:nrow(T.hat),
+                 function(i){
+                   t_i <- T.hat[i, ]
+                   tmp <- map2(t_i, P.hat, ~.x*.y)
+                   return(
+                     Reduce("+", tmp)
+                   )
+                 })
+    
+    X.hat <- map(X.hat, affine_exp, P = model$muX)
+  }else{
+    P.hat <- do.call(cbind, model$loadingsX)
+    X.hat  <- T.hat %*% t(P.hat)
+  }
+  
+  return(X.hat)
+}
+collect_Y <- function(model){
+  Y.hat <- fitted.riemannian_pls(model)
+  return(Y.hat)
+}
+collect_P <- function(model){
+  P.hat <- model$loadingsX
+  if(model$type_x == "affine"){
+    P.hat <- map(P.hat, vec, P = model$muX)
+  }
+  P.hat <- do.call(cbind, P.hat)
+  
+  return(P.hat)
+}
+collect_Q <- function(model){
+  Q.hat <- model$loadingsY
+  if(model$type_y == "affine"){
+    Q.hat <- map(Q.hat, vec, P = model$muY)
+  }
+  Q.hat <- do.call(cbind, Q.hat)
+  
+  return(Q.hat)
+}
+
+collect_full_measures <- function(model){
+  X.hat <- collect_X(model)
+  Y.hat <- collect_Y(model)
+  P.hat <- collect_P(model)
+  Q.hat <- collect_Q(model)
+  
+  return(
+    list(
+      X.hat = X.hat,
+      Y.hat = Y.hat,
+      P.hat = P.hat,
+      Q.hat = Q.hat,
+      K = model$L,
+      muX = model$muX,
+      muY = model$muY
+    )
+  )
+}
+```
+
+
+
+```{r}
+get_metrics <- function(data, measures, L = 5){
+  X.rmse <- rmse.riemannian_pls(truth = data$X, est = measures$X.hat, 
+                                type_y = data$type_x, muY = measures$muX, ignore = TRUE)
+  X.rsq <- rsq.riemannian_pls(truth = data$X, est = measures$X.hat, 
+                              type_y = data$type_x, muY = measures$muX, ignore = TRUE)
+  
+  Y.rmse <- rmse.riemannian_pls(truth = data$Y, est = measures$Y.hat, 
+                                type_y = data$type_y, muY = measures$muY, ignore = TRUE)
+  Y.rsq <- rsq.riemannian_pls(truth = data$Y, est = measures$Y.hat, 
+                              type_y = data$type_y, muY = measures$muY, ignore = TRUE)
+  
+  K <- measures$L
+  
+  P.rsq <- calculate_subspace_r2(data$trueP, measures$P.hat, K = K, L = L)
+  Q.rsq <- calculate_subspace_r2(data$trueQ, measures$Q.hat, K = K, L = L)
+  
+  return(
+    tibble(
+      P_r2 = P.rsq,
+      Q_r2 = Q.rsq,
+      X_rmse = X.rmse,
+      X_r2 = X.rsq,
+      Y_rmse = Y.rmse,
+      Y_r2 = Y.rsq
+    )
+  )
+}
+```
+
+```{r}
+m2 <- collect_full_measures(M1)
+```
+
+```{r}
+get_metrics(tmp, m2)
+```
+
+```{r}
+run_simulations(2, 10, 3, 3, 0, 1, type_x = "euclidean", type_y = "euclidean")
+```
+
+```{r}
+tmp <- read_rds("results/n_10_p_3_q_3_sig_0_K_1_xtype_euclidean_ytype_euclidean_seedbase_1994/n_10_p_3_q_3_sig_0_K_1_xtype_euclidean_ytype_euclidean_seedbase_1994.Rds")
+```
+
+
+```{r}
+tmp
+```
+

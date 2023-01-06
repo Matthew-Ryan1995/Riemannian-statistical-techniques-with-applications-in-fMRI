@@ -1,0 +1,6 @@
+"0","P.hat <- do.call(cbind, tmp$loadingsX)"
+"0","Q.hat <- do.call(cbind, tmp$loadingsY)"
+"0","T.hat <- do.call(cbind, tmp$scoresX)"
+"0","U.hat <- do.call(cbind, tmp$scoresY)"
+"0","X.hat <- T.hat %*% t(P.hat)"
+"0","Y.hat <- U.hat %*% t(Q.hat)"

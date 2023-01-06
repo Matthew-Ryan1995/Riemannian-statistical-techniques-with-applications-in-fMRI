@@ -1,0 +1,3 @@
+"0","preds <- predict.riemannian_pls(object = M, newdata = X_test, tol = 1e-4, max.iter = 20,"
+"0","                                method = ""tangent"")"
+"0","y <- t((t(Y_test) - M$muY)/M$Y_sd)"

@@ -1,0 +1,63 @@
+---
+title: "03_cobre_tables"
+output: 
+  pdf_document:
+    keep_tex: TRUE
+date: "2022-11-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+pacman::p_load(tidyverse, kableExtra)
+```
+
+```{r}
+fl <- list.files(here::here("results/cobre_vip/"), full.names = T)
+sig_cobre <- map(fl, read_rds)
+sig_cobre <- (Reduce("+", sig_cobre)/200)
+sig_cobre[1:39, ] <- 1
+sig_cobre <- sig_cobre %>%
+  apply(2, p.adjust, method = "fdr")
+fl <- list.files(here::here("results/abide_vip/"), full.names = T)
+sig_abide <- map(fl, read_rds)
+sig_abide <- do.call(rbind, sig_abide)
+sig_abide <- sig_abide/200
+sig_abide[1:116, ] <- 1
+sig_abide <- sig_abide %>%
+  apply(2, p.adjust, method = "fdr")
+
+sig_cobre <- sig_cobre %>% 
+  apply(2, function(k) sum(k < 0.05)) %>% 
+  as_tibble(rownames = "measure") %>% 
+  mutate(data = "COBRE")
+
+sig_abide <- sig_abide %>% 
+  apply(2, function(k) sum(k < 0.05)) %>% 
+as_tibble(rownames = "measure") %>% 
+  mutate(data = "ABIDE")
+
+sig <- bind_rows(sig_cobre, sig_abide)
+
+sig <- sig %>% 
+  mutate(measure = str_remove(measure, "Patient|Autism|Male|Closed"),
+         measure = str_to_title(measure),
+         measure = ifelse(measure == "Full_vip", "VIP", measure)) %>% 
+  pivot_wider(names_from = measure, values_from = value) #%>% 
+  # mutate(total = choose(c(40, 117), 2)) %>%
+  # select(data, total, everything())
+```
+
+
+```{r vip_table}
+sig %>% 
+  kbl(booktabs = T,
+      col.names = c("", colnames(sig)[-1]),
+      caption = "Number of significant predictors as measured by VIP for the COBRE and ABIDE datasets.  The VIP column represents number of significant predictors for standard VIP, whereas the rest of the columns represent the number of significant predictors for the identified response variable.", 
+      position = "htbp", 
+      align = c("l", "r", "r", "r", "r", "r"), 
+  ) %>% 
+  kable_styling(latex_options = "striped") %>% 
+  column_spec(2, border_right = T) 
+```
+
+

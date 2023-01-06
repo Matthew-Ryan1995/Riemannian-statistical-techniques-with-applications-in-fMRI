@@ -1,0 +1,5 @@
+tolerance - longest is 154 hours for 100 sims
+n - longest ~ 90 hrs
+sig - longest ~ 140 hrs
+p - longest ~ 102 hrs
+q - longest ~ 102 hrs

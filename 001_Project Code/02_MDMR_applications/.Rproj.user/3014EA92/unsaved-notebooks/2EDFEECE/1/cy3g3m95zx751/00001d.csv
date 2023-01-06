@@ -1,0 +1,2 @@
+"0","tmp <- cmdscale(G_resid, k = 5)"
+"0","full_tmp <- cmdscale(G_fit, k = 5)"

@@ -1,0 +1,286 @@
+---
+title: "Template Title"
+author: "Matt Ryan"
+date: \today
+output: 
+  html_document:
+    toc: yes
+    toc_float: yes
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+pacman::p_load(tidyverse, phdWork)
+```
+
+```{r}
+create_parameter_csv <- function(n, sig, L, p, q){
+  params <- expand_grid(
+    n = n,
+    sig = sig,
+    K = 1:(2*L),
+    p = p,
+    q = q
+  )
+  return(params)
+}
+```
+
+```{r}
+n <- c(10, 50, 100, 150)
+p <- q <-  c(10, 50, 100, 200)
+L <- 5
+sig <- c(0, 0.1, 0.5, 1)
+```
+
+```{r}
+create_parameter_csv(n, sig, L, p, q)
+```
+
+```{r}
+gen_data <- function(sims = 1, n, p, q, sig, L = 5, seed = 1234){
+  
+  sig <- sort(sig)
+  
+  if(!is.null(seed)){
+    set.seed(seed)
+  }
+  
+  # Fixed P and Q across simulation parameters p, q and L
+  P <- matrix(rnorm(L*p), nrow = p, ncol = L)
+  Q <- matrix(rnorm(L*q), nrow = q, ncol = L)
+  
+  
+  # Make P and Q orthogonal
+  if(p < L){
+    P <- t(svd(P)$v)
+  }else{
+    P <- svd(P)$u
+  }
+  if(q < L){
+    Q <- t(svd(Q)$v)
+  }else{
+    Q <- svd(Q)$u
+  }
+  
+  # Set up simulation parameters, this repeats the parameters for each simulation per sample size
+  params <- map_dfr(n,
+                    function(n){
+                      expand_grid(sig = sig, n = n, sim = rep(1:sims, n), K = 1:(2*L))
+                    }) %>% 
+    arrange(sig)
+  
+  N <- sum(sims*n*(2*L)*(length(sig))) # Total number of obs to construct
+  
+  ## Create the scores
+  Tmat <- matrix(rnorm(N * L), nrow = N)
+  ## Taking B = I so T = U
+  
+  ## Create error matrices
+  E <-  do.call(rbind, map(sig, 
+                           ~matrix(rnorm(N * p/(length(sig)), sd = .x), 
+                                   nrow = N/(length(sig)))))
+  Fmat <-  do.call(rbind, map(sig, 
+                              ~matrix(rnorm(N * q/(length(sig)), sd = .x), 
+                                      nrow = N/(length(sig)))))
+  
+  X <- tcrossprod(Tmat, P) + E
+  Y <- tcrossprod(Tmat, Q) + Fmat
+  
+  colnames(X) <- str_c("X", 1:ncol(X))
+  colnames(Y) <- str_c("Y", 1:ncol(Y))
+  
+  dat <- cbind(X, Y) %>% 
+    as_tibble() %>% 
+    bind_cols(params) %>% # Join on sim params
+    group_by(sig, sim, n, K) %>%
+    nest(X = starts_with("X"), Y = starts_with("Y")) %>% # nest my data
+    mutate(X = map(X, as.matrix), # Convert to matrices
+           X = map(X, ~apply(.x, 2, scale, scale = FALSE)), # I am applying centering here, this may be an issue.
+           Y = map(Y, as.matrix),
+           Y = map(Y, ~apply(.x, 2, scale, scale = FALSE)),) %>% 
+    ungroup() %>% 
+    mutate(p = p, q = q, L = L, P = list(P), Q = list(Q)) # add extra params, plus P and Q
+  
+  return(dat)
+}
+```
+
+```{r}
+tmp <- gen_data(1, n = c(200), p = 10, q = 10, sig = c(1))
+tmp$P[[1]]
+```
+
+```{r}
+tmp %>% 
+  transmute(sig, sd_X = map_dbl(X, sd), sd_Y = map_dbl(Y, sd)) %>% 
+  ggplot(aes(sig, sd_X)) +
+  geom_point()
+```
+
+
+
+
+```{r}
+perform_pls <- function(X, Y, K){
+  
+  # Fit PLS model with my function
+  pls_model <- riemannian_pls(X = X, Y = Y, L = K, tol = 1e-07, max.iter = 200,
+                              type_x = "euclidean", type_y = "euclidean")
+  
+  # Extract relevant matrices
+  P_fit <- do.call(cbind, pls_model$loadingsX)
+  Q_fit <- do.call(cbind, pls_model$loadingsY)
+  T_fit <- do.call(cbind, pls_model$scoresX)
+  C_fit <- do.call(cbind, pls_model$weightsY)
+  B_fit <- map_dbl(pls_model$reg_steps, ~.x$b1)
+  
+  # This stops tantrums
+  if(K == 1){
+    B_fit = matrix(B_fit)
+  }else{
+    B_fit <- diag(B_fit)
+  }
+  
+  
+  # Recover X and Y
+  X_fit <- tcrossprod(T_fit, P_fit)
+  Y_fit <- tcrossprod(tcrossprod(T_fit, B_fit), C_fit)
+  
+  # Return relevant matrices
+  return(tibble(
+    P_fit = list(P_fit),
+    Q_fit = list(Q_fit),
+    X_fit = list(X_fit),
+    Y_fit = list(Y_fit),
+  ))
+}
+
+calculate_subspace_distance <- function(U, V, K, L = 5){
+  
+  Uhat <- qr.Q(qr(U))
+  Vhat <- qr.Q(qr(V))
+  
+  # cancor_uv <- cancor(U, V, xcenter = FALSE, ycenter = FALSE)
+  uv_svd <- svd(crossprod(Uhat, Vhat))
+  # return(uv_svd)
+  uv_svd$d[uv_svd$d > 1 - 1e-8] <- 1
+  
+  dist <- sqrt(sum(acos(uv_svd$d)^2) + max(L - K, 0) * pi^2/4)
+  
+  return(dist)
+}
+
+calculate_subspace_r2 <- function(U, V, K, L = 5){
+  max_dist <- L * pi^2/4
+  
+  square_dist <- calculate_subspace_distance(U, V, K, L)^2
+  
+  r2 <- 1 - square_dist/max_dist
+  
+  return(r2)
+}
+
+calculate_xy_rmse <- function(A, B){
+  subs <- nrow(A)
+  
+  mse <- sum((A - B)^2)/subs
+  
+  return(sqrt(mse))
+}
+
+calculate_xy_r2 <- function(est, truth){
+  
+  model_dist <- sum((est - truth)^2)
+  
+  centred_truth <- apply(truth, 2, scale, scale = FALSE)
+  
+  data_dist <- sum(centred_truth^2)
+  
+  r2 <- 1 - model_dist/data_dist
+  
+  return(r2)
+}
+```
+
+
+
+
+```{r}
+tmp2 <- tmp %>% 
+  # group_by(n, sim, K, sig) %>%
+  mutate(model = pmap(list(X, Y, K), perform_pls)) %>% 
+  unnest(model)
+```
+
+```{r}
+tmp3 <- tmp2 %>% 
+  mutate(P_r2 = pmap_dbl(list(P_fit, P, K), calculate_subspace_r2),
+         Q_r2 = pmap_dbl(list(Q_fit, Q, K), calculate_subspace_r2),
+         X_rmse = map2_dbl(X_fit, X, calculate_xy_rmse),
+         X_r2 = map2_dbl(X_fit, X, calculate_xy_r2),
+         Y_rmse = map2_dbl(Y_fit, Y, calculate_xy_rmse),
+         Y_r2 = map2_dbl(Y_fit, Y, calculate_xy_r2)
+  )
+tmp3
+```
+
+
+
+
+```{r}
+tmp3 %>% 
+  mutate(sim = as.factor(sim),
+         sig = as.factor(sig)) %>% 
+  select(K, n, P_r2, Q_r2, sim, sig) %>% 
+  pivot_longer(c(P_r2, Q_r2)) %>% 
+  ggplot(aes(x = K, y = value, colour = sim, shape = sig)) +
+  geom_point() +
+  facet_grid(name~n)
+```
+
+```{r}
+tmp3 %>% 
+  mutate(sim = as.factor(sim),
+         sig = as.factor(sig)) %>% 
+  select(K, n, X_rmse, Y_rmse, sim, sig) %>% 
+  pivot_longer(c(X_rmse, Y_rmse)) %>% 
+  ggplot(aes(x = K, y = value, colour = sim, shape = sig)) +
+  geom_point() +
+  facet_grid(name~n)
+```
+
+```{r}
+tmp3 %>% 
+  mutate(sim = as.factor(sim),
+         sig = as.factor(sig)) %>% 
+  select(K, n, X_r2, Y_r2, sim, sig) %>% 
+  pivot_longer(c(X_r2, Y_r2)) %>% 
+  ggplot(aes(x = K, y = value, colour = sim, shape = sig)) +
+  geom_point() +
+  facet_grid(name~n)
+```
+
+
+
+```{r}
+tmp <- read_rds("../results/p_200_q_200_seed_2022/summaryStats_p_200_q_200_seed_2022.Rds")
+```
+```{r}
+tmp
+```
+
+```{r}
+tmp2 <- tmp %>% 
+  select(-X, -Y, -contains("fit"))
+```
+
+```{r}
+tmp2
+```
+
+
+
+
+

@@ -1,0 +1,24 @@
+---
+title: "Talyor expansion of geodesic distance"
+output: html_document
+date: "2022-09-15"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Let $M$ be a Riemannian manifold, $\mu_X \in M$ a point, and $U, V \in T_{\mu_X}M$.  Denote the exponential map at $\mu_X$ by $\mathrm{Exp}_{\mu_X}$.  Then for $U$ and $V$ sufficiently close to the origin, we have
+
+$$
+  d_g(\mathrm{Exp}_{\mu_X}(U), \mathrm{Exp}_{\mu_X}(V))^2 = \|U - V\|_{\mu_X}^2 - \frac{1}{3} R(U, V, V, U) + O\left( \|U\|_{\mu_X} + \|V\|_{\mu_X} \right)^6\, ,
+$$
+
+where $d_g$ is the geodesic distance on $M$, and $\|\cdot \|_{\mu_X}$ is the norm in $T_{\mu_X}M$.
+
+>> $R$ denotes the Riemannian curvature tensor.
+
+# Explananation
+
+This is exactly the concept that we can approximate the distance between points on the manifold by the distance in the tangent space at the Frechet mean, when the points are close to the Frechet mean.

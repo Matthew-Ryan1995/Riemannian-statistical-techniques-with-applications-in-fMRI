@@ -1,0 +1,3 @@
+"0","var_folder_name <- ""p"""
+"0","var <- ""x_dim"""
+"0","df <- get_data(var_folder_name)"

@@ -1,0 +1,34 @@
+---
+title: "Untitled"
+output: html_document
+date: "2022-08-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(tidyverse, patchwork, phdWork)
+```
+
+```{r}
+C1 %>% 
+  as_tibble(rownames = "source") %>%
+    pivot_longer(-source, names_to = "target") %>%
+    drop_na() %>%
+    mutate(source = fct_inorder(source),
+           target = factor(target, levels(source)),
+           pred = str_c(target, source, sep = "-")) %>% 
+  ggplot(aes(x = target, y = fct_rev(source))) +
+    geom_tile(aes(fill = value), colour = "black") +
+    geom_text(aes(label = round(value, 2)), colour = "black", size = 10) +
+    scale_fill_distiller(palette = "RdBu", direction = 1,
+                         # na.value = "white",
+                         limits = c(-1, 1.1),
+                         guide = guide_colorbar(frame.colour = "black",
+                                                frame.linewidth = 2,
+                                                ticks.colour = "black",
+                                                ticks.linewidth = 2,
+                                                barheight = unit(1, "cm"),
+                                                barwidth = unit(5*5, "cm"))) +
+    labs(x = NULL, y = NULL, fill = "", title = "title")
+```
+

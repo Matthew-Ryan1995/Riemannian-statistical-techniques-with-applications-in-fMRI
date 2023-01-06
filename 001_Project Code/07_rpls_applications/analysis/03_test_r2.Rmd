@@ -1,0 +1,56 @@
+---
+title: "R squared"
+output: html_document
+date: "2022-11-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Consider data $y_1 ,y_2, \dots, y_n \in \mathbb{R}$ and predicted values $\hat{y}_1, \hat{y}_2, \dots, \hat{y}_n$ from a model.  Let $\bar{y} = \frac{1}{n}\sum_{i = 1}^n y_i$.  Then we may write
+
+$$
+  \begin{aligned}
+    SST & = \sum_{i = 1}^n (y_i - \bar{y})^2 \\
+      & = \sum_{i = 1}^n (y_i - \hat{y}_i)^2 + \sum_{i = 1}^n (\hat{y}_i - \bar{y})^2 \\
+      & = SSE + SSR\, .
+    \end{aligned}
+$$
+
+> Question: Does this depend on the model used to predict $\hat{y}_i$?  I would assume yes.
+
+Then the *training* $R^2$ is the proportion of SST explained by the model, which is
+
+$$
+  R^2_{training} = \frac{SSR}{SST} = 1 - \frac{SSE}{SST}\, .
+$$
+
+however, for new data $y_{01}, y_{02}, \dots, y_{0N}$ and predicted values $\hat{y}_{01}, \hat{y}_{02}, \dots, \hat{y}_{0N}$ we no longer have the separation of the sums of squares, so we can only consider
+
+$$
+  R^2_{test} = \frac{\sum_{i = 1}^N (\hat{y}_{0i} - \bar{y}_0)^2 }{\sum_{i = 1}^N ({y}_{0i} - \bar{y}_0)^2} = \frac{SSR_{test}}{SST_{test}}
+$$
+
+where $\bar{y}_0 = \frac{1}{N}\sum_{i = 1}^n y_{i0}$.
+
+> Question: If this is true, then is the following definition appropriate.  
+
+Let $y_1, y_2, \dots, y_n$ be data with predicted values $\hat{y}_1, \hat{y}_2, \dots, \hat{y}_n$ from a model.  Let $d$ define a distance on the $y_i$ (i.e. geodesic distance or Euclidean distance in $\mathbb{R}^k$) and let $\mu_Y$ be the associated Frechet mean of the $y_i$, i.e.
+
+\[
+  \mu_Y = \arg\min \sum_{i = 1}^n d(y_i, \mu_Y)^2\, .
+\]
+
+Then the *training* $R^2$ is given by
+
+\[
+  R^2_{training} = 1 - \frac{\sum_{i = 1}^n d(y_i, \hat{y}_i)^2}{\sum_{i = 1}^n d(y_i, \mu_Y)^2} = 1 - \frac{SSDE}{SSDT}\,.
+\]
+
+Now consider new data  $y_{01}, y_{02}, \dots, y_{0N}$ and predicted values $\hat{y}_{01}, \hat{y}_{02}, \dots, \hat{y}_{0N}$, with associated Frechet mean of the $y_{i0}$ $\mu_{Y0}$.  Then the *test* $R^2$ is given by
+
+\[
+  R^2_{test} =  \frac{\sum_{i = 1}^N d(\hat{y}_{0i}, \bar{y}_0)^2 }{\sum_{i = 1}^N d({y}_{0i}, \mu_{Y0})^2} = \frac{SSDR_{test}}{SSDT_{test}}
+\]

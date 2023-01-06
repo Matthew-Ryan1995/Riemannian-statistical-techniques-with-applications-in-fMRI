@@ -1,0 +1,346 @@
+---
+title: "Exploratory plots"
+output: 
+  html_document:
+    toc: yes
+    toc_float: yes
+date: "2022-10-04"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.asp = 1.5)
+pacman::p_load(tidyverse, patchwork)
+```
+
+
+
+```{r}
+get_data <- function(folder){
+  fl <- list.files(here::here(glue::glue("results/{folder}")), full.names = T, recursive = T)
+  fl <- fl[!str_detect(fl, "presim")]
+  
+  df <- map_dfr(fl, read_rds)
+  return(df)
+}
+
+make_plots <- function(df, var, x_type, y_type){
+  df <- df %>% 
+    filter(type_x == x_type, type_y == y_type) %>% 
+    rename(var = all_of(var)) %>% 
+    mutate(K = as.factor(K), var = as.factor(var))
+  
+  
+  p1 <- df %>% 
+    select(K, var, P_r2, Q_r2) %>% 
+    pivot_longer(-c(K, var)) %>% 
+    ggplot(aes(x = K, y = value, fill = var)) +
+    geom_boxplot(show.legend = FALSE) +
+    facet_wrap(~name, ncol = 2) +
+    theme_classic()
+  p2 <- df %>% 
+    select(K, var, X_r2, Y_r2) %>% 
+    pivot_longer(-c(K, var)) %>% 
+    ggplot(aes(x = K, y = value, fill = var)) +
+    geom_boxplot(show.legend = FALSE) +
+    facet_wrap(~name, ncol = 2) +
+    theme_classic()
+  p3 <- df %>% 
+    select(K, var, X_rmse, Y_rmse) %>% 
+    pivot_longer(-c(K, var)) %>% 
+    ggplot(aes(x = K, y = value, fill = var)) +
+    geom_boxplot() +
+    facet_wrap(~name, ncol = 2) +
+    theme_classic() +
+    labs(fill = var) +
+    theme(legend.position = "bottom")
+  
+  return(p1/p2/p3)
+}
+
+```
+
+## Noise
+
+```{r}
+var_folder_name <- "noise"
+var <- "sig"
+df <- get_data(var_folder_name)
+```
+
+
+### Number of sims completed
+
+```{r, fig.asp = 1}
+df %>% 
+  count(type_x, type_y, K, sig) %>% 
+  mutate(K = as.factor(K), sig = as.factor(sig),
+         flag = case_when(
+           n < 100 ~ "1. Too little sims",
+           n == 100 ~ "2. Just Right",
+           TRUE ~ "3. Too many sims"
+         )) %>% 
+  ggplot(aes(x = K, y = sig, label = n, fill = flag)) +
+  geom_label() +
+  facet_grid(type_y ~ type_x) +
+  theme_classic() +
+  theme(legend.position = "bottom")
+```
+
+### Plots {.tabset}
+#### Affine vs Affine
+
+```{r}
+make_plots(df, var, "affine", "affine")
+```
+
+
+#### Affine vs Euclidean
+
+```{r}
+make_plots(df, var, "affine", "euclidean")
+```
+
+
+#### Euclidean vs affine
+
+```{r}
+make_plots(df, var, "euclidean", "affine")
+```
+
+
+
+
+
+## Sample Size
+
+```{r}
+var_folder_name <- "sample_size"
+var <- "n"
+df <- get_data(var_folder_name)
+```
+
+
+### Number of sims completed
+
+```{r, fig.asp = 1}
+df %>% 
+  count(type_x, type_y, K, n, name = "nn") %>% 
+  mutate(K = as.factor(K), n = as.factor(n),
+         flag = case_when(
+           nn < 100 ~ "1. Too little sims",
+           nn == 100 ~ "2. Just Right",
+           TRUE ~ "3. Too many sims"
+         )) %>% 
+  ggplot(aes(x = K, y = n, label = nn, fill = flag)) +
+  geom_label() +
+  facet_grid(type_y ~ type_x) +
+  theme_classic() +
+  theme(legend.position = "bottom")
+```
+
+### Plots {.tabset}
+
+#### Affine vs Affine
+
+```{r}
+make_plots(df, var, "affine", "affine")
+```
+
+#### Affine vs Euclidean
+
+```{r}
+make_plots(df, var, "affine", "euclidean")
+```
+
+
+#### Euclidean vs affine
+
+```{r}
+make_plots(df, var, "euclidean", "affine")
+```
+
+
+
+
+
+## q
+
+```{r}
+var_folder_name <- "q"
+var <- "y_dim"
+df <- get_data(var_folder_name)
+```
+
+
+### Number of sims completed
+
+```{r, fig.asp = 1}
+df %>% 
+  count(type_x, type_y, K, y_dim) %>% 
+  mutate(K = as.factor(K), y_dim = as.factor(y_dim),
+         flag = case_when(
+           n < 100 ~ "1. Too little sims",
+           n == 100 ~ "2. Just Right",
+           TRUE ~ "3. Too many sims"
+         )) %>% 
+  ggplot(aes(x = K, y = y_dim, label = n, fill = flag)) +
+  geom_label() +
+  facet_grid(type_y ~ type_x) +
+  theme_classic() +
+  theme(legend.position = "bottom")
+```
+
+
+### Plots {.tabset}
+
+#### Affine vs Affine
+
+```{r}
+make_plots(df, var, "affine", "affine")
+```
+
+#### Affine vs Euclidean
+
+```{r}
+make_plots(df, var, "affine", "euclidean")
+```
+
+
+#### Euclidean vs affine
+
+```{r}
+make_plots(df, var, "euclidean", "affine")
+```
+
+
+
+
+
+## p
+
+```{r}
+var_folder_name <- "p"
+var <- "x_dim"
+df <- get_data(var_folder_name)
+```
+
+
+### Number of sims completed
+
+```{r, fig.asp = 1}
+df %>% 
+  count(type_x, type_y, K, x_dim) %>% 
+  mutate(K = as.factor(K), x_dim = as.factor(x_dim),
+         flag = case_when(
+           n < 100 ~ "1. Too little sims",
+           n == 100 ~ "2. Just Right",
+           TRUE ~ "3. Too many sims"
+         )) %>% 
+  ggplot(aes(x = K, y = x_dim, label = n, fill = flag)) +
+  geom_label() +
+  facet_grid(type_y ~ type_x) +
+  theme_classic() +
+  theme(legend.position = "bottom")
+```
+
+### Plots {.tabset}
+
+#### Affine vs Affine
+
+```{r}
+make_plots(df, var, "affine", "affine")
+```
+
+#### Affine vs Euclidean
+
+```{r}
+make_plots(df, var, "affine", "euclidean")
+```
+
+
+#### Euclidean vs affine
+
+```{r}
+make_plots(df, var, "euclidean", "affine")
+```
+
+
+
+
+
+## sub
+
+```{r}
+var_folder_name <- "sub"
+var <- "x_dim"
+df <- get_data(var_folder_name)
+```
+
+
+### Number of sims completed
+
+```{r, fig.asp = 1}
+df %>% 
+  count(type_x, type_y, K, x_dim) %>% 
+  mutate(K = as.factor(K), x_dim = as.factor(x_dim),
+         flag = case_when(
+           n < 10 ~ "1. Too little sims",
+           n == 10 ~ "2. Just Right",
+           TRUE ~ "3. Too many sims"
+         )) %>% 
+  ggplot(aes(x = K, y = x_dim, label = n, fill = flag)) +
+  geom_label() +
+  facet_grid(type_y ~ type_x) +
+  theme_classic() +
+  theme(legend.position = "bottom")
+```
+
+### Plots {.tabset}
+
+#### Affine vs Affine
+
+```{r}
+make_plots(df, var, "affine", "affine")
+```
+```{r}
+df %>% 
+    filter(type_x == "affine", type_y == "affine") %>% 
+    rename(var = all_of("x_dim")) %>% 
+    mutate(K = as.factor(K), 
+           var = as.factor(var),
+           sig = as.factor(sig)) %>% 
+  select(K, var, sig, P_r2, Q_r2) %>% 
+    pivot_longer(-c(K, var, sig)) %>% 
+    ggplot(aes(x = K, y = value, fill = sig)) +
+    geom_boxplot(show.legend = T) +
+    facet_grid(var~name) +
+    theme_classic()
+```
+
+```{r}
+  
+  p1 <- df %>% 
+    select(K, var, P_r2, Q_r2) %>% 
+    pivot_longer(-c(K, var)) %>% 
+    ggplot(aes(x = K, y = value, fill = var)) +
+    geom_boxplot(show.legend = FALSE) +
+    facet_wrap(~name, ncol = 2) +
+    theme_classic()
+  p2 <- df %>% 
+    select(K, var, X_r2, Y_r2) %>% 
+    pivot_longer(-c(K, var)) %>% 
+    ggplot(aes(x = K, y = value, fill = var)) +
+    geom_boxplot(show.legend = FALSE) +
+    facet_wrap(~name, ncol = 2) +
+    theme_classic()
+  p3 <- df %>% 
+    select(K, var, X_rmse, Y_rmse) %>% 
+    pivot_longer(-c(K, var)) %>% 
+    ggplot(aes(x = K, y = value, fill = var)) +
+    geom_boxplot() +
+    facet_wrap(~name, ncol = 2) +
+    theme_classic() +
+    labs(fill = var) +
+    theme(legend.position = "bottom")
+```
+

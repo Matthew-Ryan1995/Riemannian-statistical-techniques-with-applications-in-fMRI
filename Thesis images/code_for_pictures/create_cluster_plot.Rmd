@@ -1,0 +1,69 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(tidyverse, latex2exp)
+```
+
+
+```{r}
+set.seed(12345)
+num_pts <- 5
+variation <- 0.02
+df <- tibble(
+  x = c(0, 0.05, 0.1, 0.22, 0.22),
+  y = c(0, 0.15, 0.1, 0.2, 0.05),
+  gp = "F"
+)
+df2 <- map_dfr(1:nrow(df),
+           function(i){
+             tmp <- df %>% 
+               slice(i)
+             
+             x0 <- tmp$x
+             y0 <- tmp$y
+             
+             for(j in 1:num_pts){
+               tmp <- tmp %>% 
+                 bind_rows(
+                   tibble(x = x0 + rnorm(1, sd = variation),
+                          y = y0 + rnorm(1, sd = variation),
+                          gp = "C")
+                 )
+             }
+             
+             tmp <- tmp %>% 
+               slice(-1)
+             
+             return(tmp)
+           })
+```
+
+```{r}
+df2
+```
+
+```{r}
+df %>% 
+  ggplot(aes(x = x, y = y, colour = gp, shape = gp)) +
+  geom_point(size = 5) +
+  geom_point(data = df2, size = 3) +
+  harrypotter::scale_color_hp_d("ravenclaw", labels = unname(TeX(c("$C_k$", "$F_i$")))) +
+  scale_shape_manual(values = c(4, 16), labels = unname(TeX(c( "$C_k$", "$F_i$")))) +
+  labs(shape = NULL, colour = NULL) +
+  theme_void() +
+  theme(legend.text = element_text(size = 15), 
+        legend.position = "top",
+        legend.justification = "top")
+```
+
+```{r}
+ggsave("../cluster_plot.png")
+```
+
+
+
+

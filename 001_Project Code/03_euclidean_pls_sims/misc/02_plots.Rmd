@@ -1,0 +1,134 @@
+---
+title: "Untitled"
+output: html_document
+date: "2022-08-30"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(tidyverse)
+```
+
+```{r}
+files <- list.files(here::here("results"), full.names = T, recursive = T)
+files <- files[str_detect(files, "summary")]
+df <- map_dfr(files, read_rds)
+```
+
+
+```{r}
+create_facet_plot_r2(50, "Q")
+```
+
+
+```{r}
+p <- list()
+```
+
+```{r}
+max_possible_r2 <- expand_grid(tibble(K = 1:10,
+                          r2 = map_dbl(K, ~min(1, 1 - ((5 - .x)/5)))),
+                          p = unique(df$p),
+                          q = unique(df$q)
+)
+```
+
+
+```{r}
+df %>% 
+  filter(n == 150) %>% 
+  group_by(sig, n, K, p, q) %>% 
+  summarise(across(c(contains("rmse"), contains("r2")), mean), .groups = "drop") %>% 
+  mutate(sig = as.factor(sig)) %>% 
+  rename(r2 = "P_r2") %>% 
+  ggplot(aes(x = K, y = r2)) +
+  geom_line(aes(colour = sig)) +
+  geom_point(data = max_possible_r2, shape = 4, colour = "black", size = 2) +
+  geom_vline(xintercept = 5, colour = "red", lty = 2) +
+  facet_grid(p ~ q, labeller = label_both) +
+  harrypotter::scale_color_hp_d("ravenclaw") +
+  scale_x_continuous(labels = 1:10, breaks = 1:10) +
+  scale_y_continuous(limits = c(0, 1)) +
+  labs(x = "Number of PLS components",
+       y = latex2exp::TeX("$R^2$"),
+       colour = "Error") +
+  theme_classic() +
+  theme(panel.spacing = unit(2, "lines"), 
+        # strip.text = element_text(size = 10),
+        strip.background = element_rect(fill = "gray70"))
+```
+
+```{r}
+p[[2]] <- df %>% 
+  group_by(sig, n, K, p, q) %>% 
+  summarise(across(c(contains("rmse"), contains("r2")), mean), .groups = "drop") %>% 
+  filter(n == 150) %>% 
+  ggplot(aes(x = K, y = Q_r2, colour = as.factor(sig))) +
+  geom_line() +
+  facet_grid(p ~ q)
+```
+
+```{r}
+walk(p, print)
+```
+
+
+```{r}
+df %>% 
+  group_by(sig, n, K, p, q) %>% 
+  summarise(across(c(contains("rmse"), contains("r2")), mean), .groups = "drop") %>% 
+  filter(n == 150) %>% 
+  ggplot(aes(x = K, y = X_rmse, colour = as.factor(sig))) +
+  geom_line() +
+  facet_grid(p ~ q)
+```
+
+
+```{r}
+df %>% 
+  group_by(sig, n, K, p, q) %>% 
+  summarise(across(c(contains("rmse"), contains("r2")), mean), .groups = "drop") %>% 
+  filter(n == 150) %>% 
+  ggplot(aes(x = K, y = X_r2, colour = as.factor(sig))) +
+  geom_line() +
+  facet_grid(p ~ q)
+```
+
+```{r}
+N <- 100
+interest <- "X"
+df %>%
+    filter(n == N) %>%
+    group_by(sig, n, K, p, q) %>%
+    summarise(across(c(contains("rmse"), contains("r2")), mean), .groups = "drop") %>%
+    mutate(sig = as.factor(sig)) %>%
+    rename(r2 = glue::glue("{interest}_rmse")) %>%
+    ggplot(aes(x = K, y = r2)) +
+    geom_line(aes(colour = sig)) +
+    # geom_point(data = max_possible_r2, shape = 4, colour = "black", size = 2) +
+    geom_vline(xintercept = 5, colour = "red", lty = 2) +
+    facet_grid(p ~ q, labeller = label_both) +
+    harrypotter::scale_color_hp_d("ravenclaw") +
+    scale_x_continuous(labels = 1:10, breaks = 1:10) +
+    # scale_y_continuous(limits = c(0, 1)) +
+    labs(x = "Number of PLS components",
+         y = "RMSE",
+         colour = "Error",
+         title = glue::glue("Recovery of {interest} (RMSE), n = {N}")) +
+    theme_classic() +
+    theme(panel.spacing = unit(2, "lines"),
+          # strip.text = element_text(size = 10),
+          strip.background = element_rect(fill = "gray70"))
+```
+
+```{r}
+df %>% 
+  group_by(sig, n, K, p, q) %>% 
+  summarise(across(c(contains("rmse"), contains("r2")), mean), .groups = "drop") %>% 
+  filter(n == 150) %>% 
+  ggplot(aes(x = K, y = Y_r2, colour = as.factor(sig))) +
+  geom_line() +
+  facet_grid(p ~ q)
+```
+
+

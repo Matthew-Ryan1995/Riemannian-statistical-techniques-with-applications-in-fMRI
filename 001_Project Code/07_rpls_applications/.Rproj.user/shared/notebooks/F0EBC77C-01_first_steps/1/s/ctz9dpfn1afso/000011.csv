@@ -1,0 +1,3 @@
+"0","df <- cobre %>% "
+"0","  select(group, age, cors) %>% "
+"0","  mutate(cors = map(cors, ~.x[1:4, 1:4]))"

@@ -1,0 +1,67 @@
+---
+title: "Riemann and Euclid comparison table"
+output: 
+  pdf_document:
+    keep_tex: TRUE
+date: "2022-11-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+pacman::p_load(tidyverse, kableExtra)
+source("../code/get_data.R")
+```
+
+
+```{r}
+sig_filt <- 0.1
+r_df <- get_data("noise", 1) 
+r_df <- r_df %>% 
+  filter(K == 5, sig == sig_filt, type_x == type_y) %>% 
+  select(P_r2:uq_rmse) %>% 
+  pivot_longer(everything()) %>% 
+  group_by(name) %>% 
+  summarise(mean = mean(value), sd = sd(value))
+
+files <- list.files(here::here("../03_euclidean_pls_sims/results"), full.names = T, recursive = T)
+files <- files[str_detect(files, "summary")]
+e_df <- map_dfr(files, read_rds)
+e_df <- e_df %>% 
+  filter(n == 80, p == 55, q == 55, sig == sig_filt, K == 5) %>% 
+  select(P_r2:UQ_rmse) %>% 
+  pivot_longer(everything()) %>% 
+  group_by(name) %>% 
+  summarise(mean = mean(value), sd = sd(value))
+digits <- 3
+r_summary_df <- r_df %>% 
+  mutate(metric = str_extract(name, "_[a-z0-9]*"),
+         metric = str_remove(metric, "_"),
+         name = str_remove(name, "_[a-z0-9]*"),
+         riemannian = str_c(round(mean, digits), " (", round(sd, digits), ")")) %>% 
+  select(recover = name, metric, riemannian) %>% 
+  arrange(metric)
+e_summary_df <- e_df %>% 
+  mutate(metric = str_extract(name, "_[a-z0-9]*"),
+         metric = str_remove(metric, "_"),
+         name = str_remove(name, "_[a-z0-9]*"),
+         name = ifelse(str_detect(name, "TP|UQ"), str_to_lower(name), name),
+         euclidean = str_c(round(mean, digits), " (", round(sd, digits), ")")) %>% 
+  select(recover = name, metric, euclidean) %>% 
+  arrange(metric)
+df <- left_join(r_summary_df, e_summary_df, by = c("recover", "metric"))
+```
+
+```{r}
+df %>% 
+  filter(!str_detect(recover, "X|Y")) %>% 
+  mutate(
+    metric = ifelse(metric == "r2", "$R^2$", "RMSE"),
+    metric = ifelse(recover %in% c("P", "Q"), "$R_S^2$", metric)
+  ) %>% 
+ kbl(booktabs = T,
+      col.names = c("Model Recovery", "Metric", "Riemannian", "Euclidean"),
+      caption = "", 
+      position = "htbp") %>% 
+  kable_styling(latex_options = "striped") 
+```
+

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<style>body{background-color:white;}</style>
+<script src="lib/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="lib/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="lib/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="lib/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="lib/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="lib/kePrint-0.0.1/kePrint.js"></script>
+<link href="lib/lightable-0.0.1/lightable.css" rel="stylesheet" />
+
+</head>
+<body>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<caption>Mean (SE) 10-fold cross validation results for Riemannian PLS on the ABIDE dataset, as well as Euclidean PLS using the raw correlations and the Fisher transformed correlations.  The value $K$ represents the optimal number of latent variables for each setting.  The full model metrics are the multivariate $R^2$ and RMSE on recovering age, subject group, eye status, and sex.  The group classification metrics look at the classifcation accuracy of the PLS model for subject group only.  Riemannian PLS is the best model over all model metrics.</caption>
+ <thead>
+  <tr>
+   <th style="text-align:left;">  </th>
+   <th style="text-align:left;"> Riemannian (K =3) </th>
+   <th style="text-align:left;"> Raw correlations (K =3) </th>
+   <th style="text-align:left;"> Fisher correlations (K =3) </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr grouplength="2"><td colspan="4" style="border-bottom: 1px solid;"><strong>Full model metrics (SE)</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;font-style: italic;border-right:1px solid;" indentlevel="1"> $R^2$ </td>
+   <td style="text-align:left;font-weight: bold;"> 0.15 (0.015) </td>
+   <td style="text-align:left;"> 0.07 (0.016) </td>
+   <td style="text-align:left;"> 0.07 (0.016) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;padding-left: 2em;font-style: italic;border-right:1px solid;" indentlevel="1"> RMSE </td>
+   <td style="text-align:left;font-weight: bold;"> 1.8 (0.051) </td>
+   <td style="text-align:left;"> 1.89 (0.059) </td>
+   <td style="text-align:left;"> 1.89 (0.059) </td>
+  </tr>
+  <tr grouplength="3"><td colspan="4" style="border-bottom: 1px solid;"><strong>Group classification (SE)</strong></td></tr>
+<tr>
+   <td style="text-align:left;padding-left: 2em;font-style: italic;border-right:1px solid;" indentlevel="1"> Accuracy </td>
+   <td style="text-align:left;font-weight: bold;"> 0.58 (0.027) </td>
+   <td style="text-align:left;"> 0.55 (0.032) </td>
+   <td style="text-align:left;"> 0.54 (0.032) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;padding-left: 2em;font-style: italic;border-right:1px solid;" indentlevel="1"> Sensitivity </td>
+   <td style="text-align:left;font-weight: bold;"> 0.61 (0.058) </td>
+   <td style="text-align:left;"> 0.52 (0.064) </td>
+   <td style="text-align:left;"> 0.51 (0.063) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;padding-left: 2em;font-style: italic;border-right:1px solid;" indentlevel="1"> Specificity </td>
+   <td style="text-align:left;font-weight: bold;"> 0.53 (0.063) </td>
+   <td style="text-align:left;"> 0.58 (0.065) </td>
+   <td style="text-align:left;"> 0.58 (0.065) </td>
+  </tr>
+</tbody>
+</table> <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [["$","$"]]}})</script><script async src="https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+</body>
+</html>

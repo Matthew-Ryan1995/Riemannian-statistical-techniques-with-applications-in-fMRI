@@ -1,0 +1,7 @@
+"0","df %>% "
+"0","  group_by(sig, n, K, p, q) %>% "
+"0","  summarise(across(c(contains(""rmse""), contains(""r2"")), mean), .groups = ""drop"") %>% "
+"0","  filter(n == 150) %>% "
+"0","  ggplot(aes(x = K, y = X_rmse, colour = as.factor(sig))) +"
+"0","  geom_line() +"
+"0","  facet_grid(p ~ q)"

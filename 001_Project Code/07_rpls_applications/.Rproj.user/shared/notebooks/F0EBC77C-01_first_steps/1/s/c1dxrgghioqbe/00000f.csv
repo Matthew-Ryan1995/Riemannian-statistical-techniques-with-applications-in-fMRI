@@ -1,0 +1,1 @@
+"0","tmp <- vfold_cv(df, strata = group, repeats = 2)"

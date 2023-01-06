@@ -1,0 +1,6 @@
+"0","sum((tmp2 - matrix(tmp$muY, nrow = nrow(tmp2), ncol = ncol(tmp2), byrow = TRUE))^2)
+"
+"1","[1]"
+"1"," 21886.46"
+"1","
+"
