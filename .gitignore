@@ -1,1 +1,5 @@
 *.DS_Store
+.DS_Store
+001_Project Code/*/.Rhistory
+001_Project Code/*/*.Rpoj*
+001_Project_Code/*/.Rproj.user
